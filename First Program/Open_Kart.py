@@ -1852,6 +1852,234 @@ def draw_compete_scene():
         glViewport(0, 0, SCREEN_W, SCREEN_H)
         draw_compete_overlay()
 
+def keyboardListener(key, x, y):
+    global current_map, game_state, menu_index, race_started
+    global kart_dir, kart_speed, collision_count, lives, game_over
+    global map_select_target, coins_collected, boost_timer, autopilot_timer, autopilot_side
+    global rifle_ammo, missile_ammo, rifle_regen, missile_regen
+    global ai_enabled, ai_next_missile, player_slow_timer
+    keys_down.add(key)
+
+    if game_state == STATE_MENU:
+        
+        if key in (b'\r', b'\n'):
+            sel = menu_options[menu_index]
+            if sel == "Play":
+                map_select_target = 'play'
+                game_state = STATE_PLAY_MAP_SELECT
+            elif sel == "Explore":
+                map_select_target = 'explore'
+                game_state = STATE_PLAY_MAP_SELECT
+            elif sel == "Compete":
+                map_select_target = 'compete'
+                game_state = STATE_PLAY_MAP_SELECT
+            elif sel == "Exit":
+                globals()['app_should_exit'] = True
+
+    elif game_state == STATE_PLAY_MAP_SELECT:
+        if key == b'1':
+            current_map = 1; decor_cache[1] = None
+        elif key == b'2':
+            current_map = 2; decor_cache[2] = None
+        elif key == b'3':
+            current_map = 3; decor_cache[3] = None
+        elif key in (b'm', b'M'):
+            game_state = STATE_MENU
+        elif key in (b'\r', b'\n', b' '):
+            if map_select_target == 'play':
+                
+                outer, inner = get_track_polylines_for_map(current_map)
+                fi, ft = get_finish_marker(current_map)
+                # Spawn slightly AFTER the finish gate so finish is behind karts.
+                # First full loop will reach the finish and increment to 1/2.
+                start_fwd = 120.0
+                s_seg, s_t = _step_forward_center_param(outer, fi, ft, start_fwd)
+                (sx, sy), sdir = get_center_and_tangent(outer, inner, s_seg, s_t)
+                
+                j = (s_seg + 1) % len(outer)
+                tx = outer[j][0] - outer[s_seg][0]; ty = outer[j][1] - outer[s_seg][1]
+                L = math.hypot(tx, ty) or 1.0
+                nx, ny = (-ty / L, tx / L)
+                
+                lane = 26.0
+                kart_pos[0], kart_pos[1], kart_pos[2] = sx - nx * lane, sy - ny * lane, 0.0
+                kart_dir = sdir; kart_speed = 0.0
+                race_started = False
+                collision_count = 0; game_over = False; lives = 5
+                ai_enabled = True
+                
+                globals()['ais'] = []
+                posx, posy = sx + nx * lane, sy + ny * lane
+                globals()['ais'].append({
+                    'pos':[posx, posy, 0.0], 'dir': sdir,
+                    'speed': ai_play_speed,
+                    'seg': s_seg, 't': s_t,
+                    'lane': lane,
+                    'pause_timer': 0.0,
+                    'slow_timer': 0.0,
+                    'stop_timer': 0.0,
+                    'lap_guard': 0.0,
+                })
+                
+                boost_timer = 0.0; autopilot_timer = 0.0
+                rifle_ammo = 10; missile_ammo = 3; rifle_regen = 0.0; missile_regen = 0.0
+                ai_next_missile = random.uniform(15.0, 30.0)
+                player_slow_timer = 0.0
+                bullets.clear(); missiles.clear()
+                
+                globals()['coins_collected'] = globals().get('coins_collected', 0) + 10
+                
+                # Anchor normalized progress at the actual finish marker so
+                # wraps occur only after a full lap crossing the finish line.
+                # Anchor progress at the actual finish line so wrap occurs exactly there
+                globals()['start_seg_play'] = fi
+                globals()['start_t_play'] = ft
+                globals()['player_lap'] = 0
+                globals()['prev_prog_player'] = 0.0
+                globals()['ai_laps'] = [0 for _ in ais]
+                globals()['prev_prog_ais'] = [0.0 for _ in ais]
+                globals()['play_winner'] = ""
+                globals()['lap_guard_player'] = 0.0
+                # Count the first real finish crossing as lap 1
+                globals()['ignore_first_wrap_player'] = False
+                # Initialize finish gate tracking (player + AIs)
+                fi, ft = get_finish_marker(current_map)
+                (fx, fy), fang = get_center_and_tangent(outer, inner, fi, ft)
+                urad = math.radians(fang)
+                ux, uy = math.cos(urad), math.sin(urad)
+                rx, ry = kart_pos[0] - fx, kart_pos[1] - fy
+                globals()['finish_dot_player_prev'] = rx*ux + ry*uy
+                globals()['finish_dot_ais_prev'] = []
+                for A in ais:
+                    rax, ray = A['pos'][0] - fx, A['pos'][1] - fy
+                    globals()['finish_dot_ais_prev'].append(rax*ux + ray*uy)
+                
+                build_obstacles_for_map(current_map, count=14)
+                build_blue_orbs_for_map(current_map, count=12)
+                game_state = STATE_PLAY_DRIVE
+            elif map_select_target == 'explore':
+                
+                outer, inner = get_track_polylines_for_map(current_map)
+                cx, cy = poly_centroid(inner)
+                explore_pos[0], explore_pos[1], explore_pos[2] = cx, cy, 0.0
+                coins.clear()
+                build_coins_for_map(current_map)
+                globals()['explore_timer_active'] = False
+                globals()['explore_timer'] = 0.0
+                globals()['explore_game_over'] = False
+                build_explore_ai(current_map, count=9)
+                game_state = STATE_EXPLORE
+            else:
+                
+                spawn_compete()
+                
+                build_obstacles_for_map(current_map, count=16)
+                build_blue_orbs_for_map(current_map, count=12)
+                game_state = STATE_COMPETE
+
+    elif game_state == STATE_PLAY_DRIVE:
+        if key == b' ':
+            
+            if not game_over and not race_started:
+                race_started = True
+                
+                # First crossing should count toward lap 1
+                globals()['ignore_first_wrap_player'] = False
+        if key in (b'r', b'R'):
+            reset_player_to_track()
+        if key in (b'c', b'C'):
+            
+            order = ['chase', 'cockpit', 'hood']
+            try:
+                i = order.index(camera_view)
+            except ValueError:
+                i = 0
+            camera_view = order[(i+1) % len(order)]
+        if key in (b'f', b'F'):
+            globals()['first_person'] = not globals().get('first_person', False)
+        if key == b'\x1b' and game_over:
+            
+            game_state = STATE_MENU
+        if key in (b'\r', b'\n') and game_over:
+            game_state = STATE_PLAY_MAP_SELECT
+        if key in (b'm', b'M'):
+            game_state = STATE_MENU
+        if not game_over:
+            
+            if key == b'1' and coins_collected >= 5:
+                coins_collected -= 5
+                boost_timer = 7.0
+            if key == b'2' and coins_collected >= 10:
+                coins_collected -= 10
+                autopilot_timer = 10.0
+                
+                autopilot_side = -autopilot_side
+            
+            if key in (b'q', b'Q') and rifle_ammo > 0:
+                if spawn_bullet(owner='player'):
+                    rifle_ammo -= 1
+            if key in (b'e', b'E') and missile_ammo > 0 and ai_enabled:
+                if spawn_missile(owner='player'):
+                    missile_ammo -= 1
+        
+    elif game_state == STATE_EXPLORE:
+        if key in (b'm', b'M'):
+            if explore_game_over:
+                game_state = STATE_MENU
+            else:
+                game_state = STATE_MENU
+        if key in (b'f', b'F'):
+            globals()['first_person'] = not globals().get('first_person', False)
+        
+        if key in (b'b', b'B'):
+            if globals().get('explore_boost_charges', 0) > 0 and globals().get('explore_boost_active', 0.0) <= 0.0:
+                globals()['explore_boost_charges'] -= 1
+                globals()['explore_boost_active'] = 3.0
+                
+                if globals()['explore_boost_charges'] < 2 and globals().get('explore_boost_cooldown', 0.0) <= 0.0:
+                    globals()['explore_boost_cooldown'] = 7.0
+
+    elif game_state == STATE_COMPETE:
+        if key in (b'm', b'M'):
+            game_state = STATE_MENU
+        if key in (b'\r', b'\n') and compete_over:
+            game_state = STATE_PLAY_MAP_SELECT
+        
+        if key == b'1' and p1_rifle_ammo > 0:
+            if spawn_bullet(owner='p1'):
+                globals()['p1_rifle_ammo'] -= 1
+        if key in (b'e', b'E') and p1_missile_ammo > 0:
+            if spawn_missile(owner='p1'):
+                globals()['p1_missile_ammo'] -= 1
+        if key in (b'r', b'R'):
+            reset_p1_to_track()
+        if key in (b'f', b'F'):
+            globals()['first_person'] = not globals().get('first_person', False)
+        if key in (b'i', b'I') and p2_rifle_ammo > 0:
+            if spawn_bullet(owner='p2'):
+                globals()['p2_rifle_ammo'] -= 1
+        if key in (b'o', b'O') and p2_missile_ammo > 0:
+            if spawn_missile(owner='p2'):
+                globals()['p2_missile_ammo'] -= 1
+        
+        if key in (b'l', b'L'):
+            reset_p2_to_track()
+        
+        if key in (b'b', b'B'):
+            if globals().get('p1_boost_charges', 0) > 0 and globals().get('p1_boost_active', 0.0) <= 0.0:
+                globals()['p1_boost_charges'] -= 1
+                globals()['p1_boost_active'] = 3.0
+                if globals()['p1_boost_charges'] < 2 and globals().get('p1_boost_cooldown', 0.0) <= 0.0:
+                    globals()['p1_boost_cooldown'] = 7.0
+        if key in (b'p', b'P'):
+            if globals().get('p2_boost_charges', 0) > 0 and globals().get('p2_boost_active', 0.0) <= 0.0:
+                globals()['p2_boost_charges'] -= 1
+                globals()['p2_boost_active'] = 3.0
+                if globals()['p2_boost_charges'] < 2 and globals().get('p2_boost_cooldown', 0.0) <= 0.0:
+                    globals()['p2_boost_cooldown'] = 7.0
+
+def keyboardUpListener(key, x, y):
+    keys_down.discard(key)
 #---------------------------------------------------------------
 def main():
     glutInit()
