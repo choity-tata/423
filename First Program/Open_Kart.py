@@ -2080,6 +2080,29 @@ def keyboardListener(key, x, y):
 
 def keyboardUpListener(key, x, y):
     keys_down.discard(key)
+
+
+def specialKeyListener(key, x, y):
+    global menu_index, camera_view
+    if game_state == STATE_MENU:
+        if key == GLUT_KEY_UP:
+            menu_index = (menu_index - 1) % len(menu_options)
+        elif key == GLUT_KEY_DOWN:
+            menu_index = (menu_index + 1) % len(menu_options)
+    elif game_state == STATE_PLAY_DRIVE:
+        
+        if key == GLUT_KEY_LEFT:  camera_view = 'left'
+        if key == GLUT_KEY_RIGHT: camera_view = 'right'
+        if key == GLUT_KEY_UP:    camera_view = 'front'
+        if key == GLUT_KEY_DOWN:  camera_view = 'chase'
+    elif game_state == STATE_COMPETE:
+        
+        p2_keys.add(key)
+
+def specialUpListener(key, x, y):
+    if game_state == STATE_COMPETE:
+        if key in p2_keys:
+            p2_keys.remove(key)
 #---------------------------------------------------------------
 def main():
     glutInit()
