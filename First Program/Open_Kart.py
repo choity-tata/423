@@ -2103,6 +2103,138 @@ def specialUpListener(key, x, y):
     if game_state == STATE_COMPETE:
         if key in p2_keys:
             p2_keys.remove(key)
+
+def mouseListener(button, state, x, y): pass
+
+
+
+
+def idle():
+    dt = get_dt()
+
+    
+    if 'app_should_exit' in globals() and globals()['app_should_exit']:
+        try:
+            glutLeaveMainLoop()
+        except Exception:
+            
+            globals()['app_should_exit'] = False
+            globals()['game_state'] = STATE_MENU
+            return
+
+    if game_state == STATE_PLAY_DRIVE:
+        if race_started and not game_over:
+            try:
+                
+                global boundary_hit_cooldown
+                if boundary_hit_cooldown > 0.0:
+                    boundary_hit_cooldown = max(0.0, boundary_hit_cooldown - dt)
+                if stun_timer > 0.0:
+                    
+                    pass
+                update_kart(dt)
+                update_ais(dt)
+                check_player_ai_collisions()
+                enforce_collision_and_lives()
+                check_obstacle_collisions_play()
+                update_projectiles(dt)
+                update_blue_orbs(dt)
+                check_orb_pickups_play()
+                update_obstacle_respawn(dt)
+                
+                update_laps_play()
+                
+                global rifle_regen, missile_regen, rifle_ammo, missile_ammo, ai_next_missile, last_error_message
+                rifle_regen += dt; missile_regen += dt
+                if rifle_ammo < 10 and rifle_regen >= 5.0:
+                    add = int(rifle_regen // 5.0); rifle_regen -= 5.0 * add
+                    rifle_ammo = min(10, rifle_ammo + add)
+                if missile_ammo < 3 and missile_regen >= 7.0:
+                    add = int(missile_regen // 7.0); missile_regen -= 7.0 * add
+                    missile_ammo = min(3, missile_ammo + add)
+                
+                if ai_enabled:
+                    
+                    ai_next_missile -= dt
+                    if ai_next_missile <= 0.0:
+                        
+                        spawn_missile(owner='ai')
+                        ai_next_missile = random.uniform(15.0, 30.0)
+                last_error_message = ""
+            except Exception as e:
+                
+                last_error_message = str(e)
+
+    elif game_state == STATE_EXPLORE:
+        if explore_timer_active and not explore_game_over:
+            globals()['explore_timer'] = max(0.0, explore_timer - dt)
+            if explore_timer <= 0.0:
+                globals()['explore_game_over'] = True
+        update_explore(dt)
+        update_coins(dt)
+        update_explore_ai(dt)
+
+    elif game_state == STATE_COMPETE and compete_started:
+        
+        global p1_hit_cd, p2_hit_cd
+        if p1_hit_cd > 0.0: p1_hit_cd = max(0.0, p1_hit_cd - dt)
+        if p2_hit_cd > 0.0: p2_hit_cd = max(0.0, p2_hit_cd - dt)
+
+        if not compete_over:
+            
+            global p1_boost_active, p1_boost_cooldown, p1_boost_charges
+            global p2_boost_active, p2_boost_cooldown, p2_boost_charges
+            if p1_boost_active > 0.0:
+                p1_boost_active = max(0.0, p1_boost_active - dt)
+            if p2_boost_active > 0.0:
+                p2_boost_active = max(0.0, p2_boost_active - dt)
+            if p1_boost_charges < 2:
+                p1_boost_cooldown = max(0.0, p1_boost_cooldown - dt)
+                if p1_boost_cooldown == 0.0:
+                    p1_boost_charges += 1
+                    if p1_boost_charges < 2:
+                        p1_boost_cooldown = 7.0
+            if p2_boost_charges < 2:
+                p2_boost_cooldown = max(0.0, p2_boost_cooldown - dt)
+                if p2_boost_cooldown == 0.0:
+                    p2_boost_charges += 1
+                    if p2_boost_charges < 2:
+                        p2_boost_cooldown = 7.0
+            
+            p1_left  = (b'a' in keys_down); p1_right = (b'd' in keys_down)
+            p1_acc   = (b'w' in keys_down); p1_brake = (b's' in keys_down)
+            
+            p2_left  = (GLUT_KEY_LEFT  in p2_keys); p2_right = (GLUT_KEY_RIGHT in p2_keys)
+            p2_acc   = (GLUT_KEY_UP    in p2_keys); p2_brake = (GLUT_KEY_DOWN  in p2_keys)
+
+            
+            global p1_stun, p2_stun, p1_speed, p2_speed, p1_dir, p2_dir
+            global p1_slow_timer, p2_slow_timer
+            slow1 = 1.0
+            if p1_stun > 0.0:
+                p1_stun = max(0.0, p1_stun - dt); p1_speed = 0.0
+            else:
+                
+                slow1 = 0.7 if p1_slow_timer > 0.0 else 1.0
+                if p1_slow_timer > 0.0: p1_slow_timer = max(0.0, p1_slow_timer - dt)
+            p1_dir, p1_speed = update_player(dt, p1_pos, p1_dir, p1_speed,
+                                             {'left':p1_left,'right':p1_right,'accel':p1_acc,'brake':p1_brake})
+            p1_speed = min(p1_speed, 780.0 * slow1)
+            slow2 = 1.0
+            if p2_stun > 0.0:
+                p2_stun = max(0.0, p2_stun - dt); p2_speed = 0.0
+            else:
+                slow2 = 0.7 if p2_slow_timer > 0.0 else 1.0
+                if p2_slow_timer > 0.0: p2_slow_timer = max(0.0, p2_slow_timer - dt)
+            p2_dir, p2_speed = update_player(dt, p2_pos, p2_dir, p2_speed,
+                                             {'left':p2_left,'right':p2_right,'accel':p2_acc,'brake':p2_brake},
+                                             is_p2=True)
+            p2_speed = min(p2_speed, 780.0 * slow2)
+            check_pvp_collision()
+            update_laps_compete()
+        
+
+    glutPostRedisplay()
 #---------------------------------------------------------------
 def main():
     glutInit()
