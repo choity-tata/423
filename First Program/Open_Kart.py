@@ -2459,6 +2459,25 @@ def update_projectiles(dt):
                     p1_collision_count += 1; p1_hit_cd = 0.5
                 missiles.pop(i); continue
         i += 1
+
+def draw_projectiles():
+    
+    for b in bullets:
+        glPushMatrix()
+        glTranslatef(b["x"], b["y"], 10.0)
+        glColor3f(0.9, 0.2, 0.2)
+        glutSolidCube(8)
+        glPopMatrix()
+    
+    for m in missiles:
+        glPushMatrix()
+        glTranslatef(m["x"], m["y"], 10.0)
+        glRotatef(m["dir"], 0, 0, 1)
+        glColor3f(0.9, 0.85, 0.2)
+        
+        glRotatef(90, 0, 1, 0)
+        gluCylinder(q_cyl, 3.0, 3.0, 14.0, 10, 1)
+        glPopMatrix()
 #---------------------------------------------------------------
 def main():
     glutInit()
