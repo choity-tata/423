@@ -67,7 +67,41 @@ def draw_base(color):
     glEnd()
 
 
+def gen_oval(cx, cy, rx, ry, n):
+    pts = []
+    for k in range(n):
+        a = 2*math.pi*k/n
+        pts.append((cx + rx*math.cos(a), cy + ry*math.sin(a)))
+    return pts
 
+def gen_regular_polygon(cx, cy, r, n, rot_deg=0.0, sx=1.0, sy=1.0):
+    rot = math.radians(rot_deg)
+    pts = []
+    for k in range(n):
+        a = 2*math.pi*k/n + rot
+        pts.append((cx + sx*r*math.cos(a), cy + sy*r*math.sin(a)))
+    return pts
+
+def offset_inner_from_center(outer_pts, inset):
+    cx = sum(p[0] for p in outer_pts)/len(outer_pts)
+    cy = sum(p[1] for p in outer_pts)/len(outer_pts)
+    inner = []
+    for x,y in outer_pts:
+        vx, vy = x-cx, y-cy
+        d = math.hypot(vx, vy)
+        scale = max((d - inset) / d, 0.05) if d != 0 else 0.95
+        inner.append((cx + vx*scale, cy + vy*scale))
+    return inner
+
+def ring_from_polylines(outer_pts, inner_pts, color):
+    n = len(outer_pts)
+    for i in range(n):
+        j = (i + 1) % n
+        v0 = (outer_pts[i][0], outer_pts[i][1], 0)
+        v1 = (outer_pts[j][0], outer_pts[j][1], 0)
+        v2 = (inner_pts[j][0], inner_pts[j][1], 0)
+        v3 = (inner_pts[i][0], inner_pts[i][1], 0)
+        quad(v0, v1, v2, v3, color)
 
 
 
