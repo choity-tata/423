@@ -2523,6 +2523,22 @@ def draw_autopilot_timer_over_kart():
         sp_secs = int(math.ceil(boost_timer))
         
         draw_text(x, line_y, f"SP:{sp_secs}", rgb=(1.0, 0.85, 0.20))
+
+def reset_player_to_track():
+    outer, inner = get_track_polylines_for_map(current_map)
+    seg, t, (cx, cy) = closest_center_param(outer, inner, kart_pos[0], kart_pos[1])
+    
+    (tx, ty), ang = get_center_and_tangent(outer, inner, seg, t)
+    j = (seg + 1) % len(outer)
+    dx = outer[j][0] - outer[seg][0]; dy = outer[j][1] - outer[seg][1]
+    L  = math.hypot(dx, dy) or 1.0
+    nx, ny = (-dy / L, dx / L)
+    lane = 26.0
+    kart_pos[0], kart_pos[1], kart_pos[2] = cx - nx*lane, cy - ny*lane, 0.0
+    global kart_dir, kart_speed, stun_timer
+    kart_dir = ang
+    kart_speed = 0.0
+    stun_timer = 0.0
 #---------------------------------------------------------------
 def main():
     glutInit()
