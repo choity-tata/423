@@ -1764,6 +1764,23 @@ def setupCamera_compete_for(pos, dir_deg):
         tx = px + dx * 60.0;  ty = py + dy * 60.0;  tz = 16.0
     gluLookAt(cx, cy, cz, tx, ty, tz, 0, 0, 1)
 
+def draw_game_over_overlay():
+    if not game_over: return
+    glPushAttrib(GL_ENABLE_BIT); glDisable(GL_LIGHTING)
+    draw_text(SCREEN_W//2 - 100, SCREEN_H//2 + 20, "GAME OVER")
+    if play_winner:
+        draw_text(SCREEN_W//2 - 120, SCREEN_H//2 - 10, play_winner)
+    draw_text(SCREEN_W//2 - 260, SCREEN_H//2 - 40, "Press Esc for Main Menu or Enter to Map Select")
+    glPopAttrib()
+
+def draw_compete_overlay():
+    glPushAttrib(GL_ENABLE_BIT); glDisable(GL_LIGHTING)
+    draw_text(SCREEN_W//2 - 120, SCREEN_H//2 + 20, "RACE FINISHED")
+    if compete_winner:
+        draw_text(SCREEN_W//2 - 100, SCREEN_H//2 - 10, compete_winner)
+    draw_text(SCREEN_W//2 - 260, SCREEN_H//2 - 40, "Press Esc for Main Menu or Enter to Map Select")
+    glPopAttrib()
+
 #---------------------------------------------------------------
 def main():
     glutInit()
