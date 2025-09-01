@@ -5,9 +5,9 @@ The game begins with a main menu offering options: Play, Explore, Compete, and E
 Players can pause the game with P. The camera defaults to third-person but supports left, right, and front angles. First-person mode can be toggled with F for immersive gameplay.
 # 3. Play Mode (Single Race)
 Players choose from 3 tracks:
-•	Sunny Oval (trees)
-•	Frozen Square (ice statues)
-•	Night Circuit (rocks)
+*	Sunny Oval (trees)
+*	Frozen Square (ice statues)
+*	Night Circuit (rocks)
 The player spawns near a kart, pressing Space to start. Kart controls: W/S/A/D to accelerate, brake, and steer.
 # 4. Collisions System
 Hitting track walls or opponents increases Collision Count. When Collisions ≥ 5, the player loses 1 life and respawns. This system adds challenge and consequence to reckless driving.
@@ -15,8 +15,8 @@ Hitting track walls or opponents increases Collision Count. When Collisions ≥ 
 Each race consists of 2 laps. The winner is determined by who crosses the finish line first, introducing competitive pacing.
 # 6. Power-ups
 Players can collect or purchase power-ups:
-•	Boost: lasts 7 seconds, costs 5 coins.
-•	Autopilot: lasts 10 seconds, costs 10 coins.
+*	Boost: lasts 7 seconds, costs 5 coins.
+*	Autopilot: lasts 10 seconds, costs 10 coins.
 These items add strategic variety to racing.
 # 7. Weapons & Combat
 Players can use a Rifle (Q) and Missile Launcher (E) with limited ammunition to hinder opponents. This adds combat elements to the racing environment.
@@ -32,8 +32,8 @@ On-foot characters can activate a Boost Skill with B, using up to 2 charges that
 Even in Explore Mode, opponent karts roam the tracks, adding a layer of unpredictability and interaction while exploring.
 # 13. Compete Mode (Multiplayer)
 Split-screen gameplay allows two players to race simultaneously:
-•	Player 1: W/S/A/D
-•	Player 2: Arrow Keys
+*	Player 1: W/S/A/D
+*	Player 2: Arrow Keys
 Win condition: First to complete 2 laps.
 # 14. Speed Boost (Compete Mode)
 Both players have access to a Speed Boost skill. Player 1 uses B, Player 2 uses P. This balances multiplayer gameplay by offering equal advantage opportunities.
@@ -41,9 +41,10 @@ Both players have access to a Speed Boost skill. Player 1 uses B, Player 2 uses 
 Karts are affected by velocity, acceleration, and friction. These mechanics create realistic handling and encourage skillful driving.
 # 16. HUD & Game Feedback
 The HUD adapts per mode:
-•	Race HUD: Lives, Score, Lap counter, Collisions, Ammo, Boost timers.
-•	Explore HUD: Coins collected, Time countdown, Skill duration.
-•	Compete HUD: Player labels, Lap counters.
-The feedback system ensures players always have critical information.
+*	Race HUD: Lives, Score, Lap counter, Collisions, Ammo, Boost timers.
+*	Explore HUD: Coins collected, Time countdown, Skill duration.
+*	Compete HUD: Player labels, Lap counters.
+## The feedback system ensures players always have critical information.
+
 
 
