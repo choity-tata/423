@@ -795,6 +795,135 @@ def update_laps_compete():
             compete_winner = "Player 2 Wins!"
 
 
+def update_kart(dt):
+    global kart_speed, kart_dir, stun_timer, boost_timer, autopilot_timer, lap_guard_player
+    global ai_enabled, player_slow_timer, boundary_hit_cooldown, collision_count
+    
+    if stun_timer > 0.0:
+        stun_timer = max(0.0, stun_timer - dt)
+        kart_speed = 0.0
+        return
+
+    
+
+    
+    slow_mult = 0.65 if player_slow_timer > 0.0 else 1.0
+    if player_slow_timer > 0.0:
+        player_slow_timer = max(0.0, player_slow_timer - dt)
+
+    
+    boost_mult = 1.0
+    if boost_timer > 0.0:
+        boost_mult = max(boost_mult, 1.6)
+    if autopilot_timer > 0.0:
+        boost_mult = max(boost_mult, 1.15)
+    
+    if 'orb_boost_timer_play' in globals() and orb_boost_timer_play > 0.0:
+        boost_mult = max(boost_mult, 2.3)
+
+    a = 0.0
+    if autopilot_timer > 0.0:
+        
+        a += kart_accel
+    else:
+        if b'w' in keys_down: a += kart_accel
+        if b's' in keys_down: a -= kart_brake
+    kart_speed += a * dt
+    kart_speed = min(kart_speed, kart_max_speed * boost_mult * slow_mult)
+    kart_speed = max(kart_speed, -kart_max_speed*0.4)
+
+    
+    if kart_speed > 0:
+        kart_speed -= 120.0 * dt
+        if kart_speed < 0: kart_speed = 0.0
+    elif kart_speed < 0:
+        kart_speed += 120.0 * dt
+        if kart_speed > 0: kart_speed = 0.0
+
+    
+    if autopilot_timer > 0.0:
+        outer, inner = get_track_polylines_for_map(current_map)
+        seg, t, (cx, cy) = closest_center_param(outer, inner, kart_pos[0], kart_pos[1])
+        
+        (_, cur_ang) = get_center_and_tangent(outer, inner, seg, t)
+        
+        ahead_len = max(120.0, min(420.0, 180.0 + kart_speed * 0.20))
+        if current_map == 3:
+            ahead_len *= 0.85
+        segA, tA = _step_forward_center_param(outer, seg, t, ahead_len)
+        (ax, ay), ang = get_center_and_tangent(outer, inner, segA, tA)
+        
+        corner = abs(((ang - cur_ang + 540.0) % 360.0) - 180.0)
+        if corner > 25.0:
+            ahead_len = max(90.0, ahead_len * 0.55)
+            segA, tA = _step_forward_center_param(outer, seg, t, ahead_len)
+            (ax, ay), ang = get_center_and_tangent(outer, inner, segA, tA)
+        
+        desired_side = 0.0
+        if ai_enabled and ais:
+            best = 1e18
+            for A in ais:
+                dx = ax - A['pos'][0]; dy = ay - A['pos'][1]
+                d2 = dx*dx + dy*dy
+                if d2 < best:
+                    best = d2
+            if best < (160.0*160.0):
+                desired_side = autopilot_side  
+        j = (segA + 1) % len(outer)
+        tx = outer[j][0] - outer[segA][0]; ty = outer[j][1] - outer[segA][1]
+        L  = math.hypot(tx, ty) or 1.0
+        nx, ny = (-ty / L, tx / L)
+        
+        def _mix(a, b, s):
+            return (a[0]*(1-s)+b[0]*s, a[1]*(1-s)+b[1]*s)
+        oA = _mix(outer[segA], outer[j], tA)
+        iA = _mix(inner[segA], inner[j], tA)
+        track_w = math.hypot(oA[0]-iA[0], oA[1]-iA[1])
+        half_w = 0.5 * track_w
+        safety = 18.0 if current_map != 3 else 22.0
+        lane_limit = max(10.0, half_w - safety)
+        lane = desired_side * min((12.0 if current_map == 3 else 18.0), lane_limit)  
+        target_x = ax + nx * lane
+        target_y = ay + ny * lane
+        desired = math.degrees(math.atan2(target_y - kart_pos[1], target_x - kart_pos[0]))
+        
+        speed_factor = max(0.35, kart_speed/max(kart_max_speed,1.0))
+        base_turn = 3.6 if current_map != 3 else 3.9
+        turn_speed = base_turn * speed_factor * 60.0 * dt
+        
+        diff = (desired - kart_dir + 540.0) % 360.0 - 180.0
+        if diff > 0: kart_dir += min(diff, turn_speed)
+        else:        kart_dir += max(diff, -turn_speed)
+        
+        base_cap = kart_max_speed * boost_mult * slow_mult
+        sharp = abs(diff)
+        if current_map == 3:
+            if corner > 40.0:
+                base_cap *= 0.55
+            elif corner > 25.0:
+                base_cap *= 0.75
+        if sharp > 45.0:
+            base_cap *= 0.55
+        elif sharp > 30.0:
+            base_cap *= 0.75
+        elif sharp > 20.0:
+            base_cap *= 0.90
+        if kart_speed > base_cap:
+            
+            kart_speed = max(base_cap, kart_speed - kart_brake * 0.7 * dt)
+    else:
+        
+        if b'a' in keys_down:
+            kart_dir += 3.0 * (kart_speed/max(kart_max_speed,1.0)) * 60.0 * dt
+        if b'd' in keys_down:
+            kart_dir -= 3.0 * (kart_speed/max(kart_max_speed,1.0)) * 60.0 * dt
+
+    dx = math.cos(math.radians(kart_dir)) * kart_speed * dt
+    dy = math.sin(math.radians(kart_dir)) * kart_speed * dt
+    oldx, oldy = kart_pos[0], kart_pos[1]
+    kart_pos[0] += dx; kart_pos[1] += dy
+
+
 
 #---------------------------------------------------------------
 def main():
