@@ -1323,6 +1323,25 @@ def reset_p2_to_track():
     p2_pos[0], p2_pos[1], p2_pos[2] = cx - nx*lane, cy - ny*lane, 0.0
     global p2_dir, p2_speed, p2_stun
     p2_dir = ang; p2_speed = 0.0; p2_stun = 0.0
+
+def build_coins_for_map(m):
+    global coins, coins_collected, coin_spin, coin_bob_t
+    coins_collected = 0; coin_spin = 0.0; coin_bob_t = 0.0
+    coins = []
+    outer, inner = get_track_polylines_for_map(m)
+    n = random.randint(10, 15)
+    def _poly_bounds(poly):
+        xs = [p[0] for p in poly]; ys = [p[1] for p in poly]
+        return min(xs), max(xs), min(ys), max(ys)
+    def _rand_point_in_poly(poly):
+        minx, maxx, miny, maxy = _poly_bounds(poly)
+        for _ in range(2000):
+            x = random.uniform(minx, maxx); y = random.uniform(miny, maxy)
+            if point_in_poly(x, y, poly): return (x, y)
+        cx = sum(p[0] for p in poly)/len(poly); cy = sum(p[1] for p in poly)/len(poly); return cx, cy
+    for _ in range(n):
+        x, y = _rand_point_in_poly(inner)
+        coins.append({"x": x, "y": y, "active": True, "timer": 0.0})
 #---------------------------------------------------------------
 def main():
     glutInit()
