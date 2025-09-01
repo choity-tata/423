@@ -2235,6 +2235,40 @@ def idle():
         
 
     glutPostRedisplay()
+
+def showScreen():
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+    glLoadIdentity()
+
+    if game_state == STATE_MENU:
+        glViewport(0, 0, SCREEN_W, SCREEN_H)
+        setupCamera_common_projection(SCREEN_W/SCREEN_H, map_select=False)
+        gluLookAt(camera_pos[0], camera_pos[1], camera_pos[2], 0, 0, 0, 0, 0, 1)
+        draw_menu()
+
+    elif game_state == STATE_PLAY_MAP_SELECT:
+        glViewport(0, 0, SCREEN_W, SCREEN_H)
+        setupCamera_common_projection(SCREEN_W/SCREEN_H, map_select=True)
+        setupCamera_mapselect()
+        draw_play_map_select()
+
+    elif game_state == STATE_PLAY_DRIVE:
+        glViewport(0, 0, SCREEN_W, SCREEN_H)
+        setupCamera_common_projection(SCREEN_W/SCREEN_H, map_select=False)
+        setupCamera_play()
+        draw_play_scene()
+
+    elif game_state == STATE_EXPLORE:
+        glViewport(0, 0, SCREEN_W, SCREEN_H)
+        setupCamera_common_projection(SCREEN_W/SCREEN_H, map_select=False)
+        setupCamera_explore()
+        draw_explore_scene()
+
+    elif game_state == STATE_COMPETE:
+        
+        draw_compete_scene()
+
+    glutSwapBuffers()
 #---------------------------------------------------------------
 def main():
     glutInit()
