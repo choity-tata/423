@@ -2269,6 +2269,14 @@ def showScreen():
         draw_compete_scene()
 
     glutSwapBuffers()
+
+def world_to_screen(x, y, z=0.0):
+    
+    model = glGetDoublev(GL_MODELVIEW_MATRIX)
+    proj = glGetDoublev(GL_PROJECTION_MATRIX)
+    viewport = glGetIntegerv(GL_VIEWPORT)
+    sx, sy, sz = gluProject(x, y, z, model, proj, viewport)
+    return sx, sy
 #---------------------------------------------------------------
 def main():
     glutInit()
