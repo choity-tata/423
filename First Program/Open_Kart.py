@@ -1798,6 +1798,60 @@ def draw_play_scene():
         draw_text(10, 650, f"Error: {last_error_message}", rgb=(1,0.4,0.4))
     if game_over:
         draw_game_over_overlay()
+
+def draw_compete_scene():
+    
+    glViewport(0, 0, SCREEN_W//2, SCREEN_H)
+    set_clear_color_for_map()
+    setupCamera_common_projection((SCREEN_W/2)/SCREEN_H, map_select=False)
+    setupCamera_compete_for(p1_pos, p1_dir)
+    draw_track()
+    draw_kart_at(p2_pos, p2_dir, body_color=(0.10, 0.25, 0.85))  
+    draw_kart_at(p1_pos, p1_dir, body_color=(0.85, 0.10, 0.10))
+    
+    try:
+        
+        sxL, syL = world_to_screen(*_kart_side_offset(p1_pos, p1_dir, side=+1.0, dist=34.0), 18.0)
+        sxR, syR = world_to_screen(*_kart_side_offset(p1_pos, p1_dir, side=-1.0, dist=34.0), 18.0)
+        draw_text(int(sxL), int(syL), f"{p1_boost_charges}/2")
+        skill_secs = int(p1_boost_active) if p1_boost_active > 0.0 else 0
+        refill_secs = int(p1_boost_cooldown) if p1_boost_charges < 2 else 0
+        draw_text(int(sxR), int(syR) + 14, f"Skill Duration: {skill_secs}")
+        draw_text(int(sxR), int(syR) - 2,  f"Refill Duration: {refill_secs}")
+    except Exception:
+        pass
+    draw_text(20, SCREEN_H - 40, "Player 1", rgb=(1,0.4,0.4))
+    
+    draw_text(SCREEN_W//2 - 140, SCREEN_H - 40, f"Lap: {p1_lap}/2")
+
+    
+    glViewport(SCREEN_W//2, 0, SCREEN_W//2, SCREEN_H)
+    set_clear_color_for_map()
+    setupCamera_common_projection((SCREEN_W/2)/SCREEN_H, map_select=False)
+    setupCamera_compete_for(p2_pos, p2_dir)
+    draw_track()
+    draw_kart_at(p1_pos, p1_dir, body_color=(0.85, 0.10, 0.10))
+    draw_kart_at(p2_pos, p2_dir, body_color=(0.10, 0.25, 0.85))
+    
+    try:
+        sxL, syL = world_to_screen(*_kart_side_offset(p2_pos, p2_dir, side=+1.0, dist=34.0), 18.0)
+        sxR, syR = world_to_screen(*_kart_side_offset(p2_pos, p2_dir, side=-1.0, dist=34.0), 18.0)
+        draw_text(int(sxL), int(syL), f"{p2_boost_charges}/2")
+        skill_secs = int(p2_boost_active) if p2_boost_active > 0.0 else 0
+        refill_secs = int(p2_boost_cooldown) if p2_boost_charges < 2 else 0
+        draw_text(int(sxR), int(syR) + 14, f"Skill Duration: {skill_secs}")
+        draw_text(int(sxR), int(syR) - 2,  f"Refill Duration: {refill_secs}")
+    except Exception:
+        pass
+    draw_text(SCREEN_W//2 + 20, SCREEN_H - 40, "Player 2", rgb=(0.6,0.8,1.0))
+    
+    draw_text(SCREEN_W - 140, SCREEN_H - 40, f"Lap: {p2_lap}/2")
+
+    
+    if compete_over:
+        glViewport(0, 0, SCREEN_W, SCREEN_H)
+        draw_compete_overlay()
+
 #---------------------------------------------------------------
 def main():
     glutInit()
