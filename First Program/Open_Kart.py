@@ -1453,6 +1453,22 @@ def update_explore_ai(dt):
         nx, ny = (-dy / L, dx / L)
         A['pos'][0], A['pos'][1], A['pos'][2] = cx + nx * A['lane'], cy + ny * A['lane'], 0.0
         A['dir'] = ang
+
+def draw_explore_player():
+    swing = math.sin(walk_phase) * 28.0 * walk_blend
+    armSwing = -swing * 0.70
+    glPushMatrix()
+    glTranslatef(explore_pos[0], explore_pos[1], 0.0)
+    glRotatef(explore_dir - 90.0, 0, 0, 1)
+    glPushMatrix(); glTranslatef(0, 0, 12); glScalef(0.6, 0.4, 0.9); glColor3f(0.85, 0.10, 0.10); glutSolidCube(20); glPopMatrix()
+    glPushMatrix(); glTranslatef(0, 0, 26); glColor3f(0.90, 0.75, 0.55); gluSphere(q_sph, 4.8, 14, 12); glPopMatrix()
+    
+    glPushMatrix(); glTranslatef(-3.5, 0.0, 12.0); glRotatef(+swing, 1, 0, 0); glTranslatef(0,0,-8); glScalef(2,2,16); glColor3f(0.15,0.15,0.18); glutSolidCube(1); glPopMatrix()
+    glPushMatrix(); glTranslatef( 3.5, 0.0, 12.0); glRotatef(-swing, 1, 0, 0); glTranslatef(0,0,-8); glScalef(2,2,16); glColor3f(0.15,0.15,0.18); glutSolidCube(1); glPopMatrix()
+    
+    glPushMatrix(); glTranslatef(-6.5, 0.0, 18.0); glRotatef(+armSwing, 1, 0, 0); glTranslatef(0,0,-6); glScalef(1.6,1.6,12); glColor3f(0.90,0.75,0.55); glutSolidCube(1); glPopMatrix()
+    glPushMatrix(); glTranslatef( 6.5, 0.0, 18.0); glRotatef(-armSwing, 1, 0, 0); glTranslatef(0,0,-6); glScalef(1.6,1.6,12); glColor3f(0.90,0.75,0.55); glutSolidCube(1); glPopMatrix()
+    glPopMatrix()
 #---------------------------------------------------------------
 def main():
     glutInit()
