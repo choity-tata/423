@@ -374,6 +374,160 @@ def draw_kart_at(pos_xy, dir_deg, body_color=(0.85, 0.10, 0.10), with_driver=Tru
         glPushMatrix(); glTranslatef(dx, dy-2, 6.2); draw_wheel(); glPopMatrix()
     if with_driver: draw_driver_headarms()
     glPopMatrix()
+
+kart_pos = [0.0, -300.0, 0.0]
+kart_dir = 0.0
+kart_speed = 0.0
+kart_max_speed = 640.0
+kart_accel = 480.0
+kart_brake = 320.0
+
+
+ai_enabled = True
+ais = []  
+ai_play_speed = 780.0
+
+lives = 5
+collision_count = 0
+max_collisions_before_life_loss = 5
+race_started = False
+game_over = False
+player_lap = 0
+start_seg_play = 0
+start_t_play = 0.0
+prev_prog_player = 0.0
+play_winner = ""
+lap_guard_player = 0.0  
+ignore_first_wrap_player = False  
+player_position = 1  
+
+
+boost_timer = 0.0           
+autopilot_timer = 0.0       
+autopilot_side = 1.0        
+
+
+rifle_ammo = 10             
+rifle_regen = 0.0
+missile_ammo = 3            
+missile_regen = 0.0
+player_slow_timer = 0.0     
+ai_next_missile = 10.0      
+ai_next_rifle = 3.0         
+orb_boost_timer_play = 0.0  
+
+
+bullets = []   
+missiles = []  
+
+
+obstacles = []  
+blue_orbs = []  
+
+
+kart_collision_radius = 22.0
+stun_duration_on_bump = 0.6
+stun_timer = 0.0
+boundary_hit_cooldown = 0.0
+lap_guard_player = 0.0  
+
+
+
+
+explore_pos   = [0.0, 0.0, 0.0]
+explore_speed = 180.0
+explore_dir = 0.0
+explore_turn_rate = 140.0
+explore_cam_dist = 190.0
+explore_cam_height = 120.0
+explore_cam_look_ahead = 40.0
+explore_model_yaw_offset = -90.0
+walk_phase = 0.0
+walk_blend = 0.0
+walk_swing_deg = 28.0
+first_person = False
+
+coins = []
+coins_collected = 0
+coin_count_min, coin_count_max = 10, 15
+coin_collect_radius = 24.0
+coin_respawn_min, coin_respawn_max = 3.0, 7.0
+coin_spin = 0.0
+coin_bob_t = 0.0
+explore_timer_active = False
+explore_timer = 0.0
+explore_game_over = False
+explore_ai = []  
+
+explore_boost_active = 0.0
+explore_boost_cooldown = 0.0   
+explore_boost_charges = 2
+explore_boost_mult = 2.8
+
+
+
+
+compete_started = False
+comp_start_seg = 0  
+comp_start_t = 0.0
+compete_over = False
+compete_winner = ""
+
+
+p1_pos = [0.0, 0.0, 0.0]
+p1_dir = 0.0
+p1_speed = 0.0
+p1_stun = 0.0
+
+
+p2_pos = [0.0, 0.0, 0.0]
+p2_dir = 0.0
+p2_speed = 0.0
+p2_stun = 0.0
+
+
+p1_rifle_ammo = 10; p1_rifle_regen = 0.0
+p1_missile_ammo = 3; p1_missile_regen = 0.0
+p2_rifle_ammo = 10; p2_rifle_regen = 0.0
+p2_missile_ammo = 3; p2_missile_regen = 0.0
+p1_slow_timer = 0.0; p2_slow_timer = 0.0
+
+p1_lives = 5; p2_lives = 5
+p1_collision_count = 0; p2_collision_count = 0
+p1_hit_cd = 0.0; p2_hit_cd = 0.0
+p1_lap = 0; p2_lap = 0
+prev_prog_p1 = 0.0; prev_prog_p2 = 0.0
+ignore_first_wrap_p1 = False
+ignore_first_wrap_p2 = False
+# Signed distance to the finish gate along the track tangent at the finish
+# (used to detect crossing the finish line robustly on polygonal tracks).
+finish_dot_player_prev = None
+finish_dot_ais_prev = []
+finish_dot_p1_prev = None
+finish_dot_p2_prev = None
+
+p1_boost_active = 0.0
+p1_boost_cooldown = 0.0
+p1_boost_charges = 2
+p2_boost_active = 0.0
+p2_boost_cooldown = 0.0
+p2_boost_charges = 2
+p1_orb_boost_timer = 0.0; p2_orb_boost_timer = 0.0
+
+
+
+
+keys_down = set()        
+p2_keys = set()          
+
+def get_dt():
+    if not hasattr(get_dt, "prev"):
+        get_dt.prev = time.time()
+        return 0.016
+    now = time.time()
+    dt = now - get_dt.prev
+    get_dt.prev = now
+    return max(0.0, min(dt, 0.05))
 #---------------------------------------------------------------
 def main():
     glutInit()
