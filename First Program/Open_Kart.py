@@ -59,6 +59,14 @@ def set_clear_color_for_map():
 
 
 
+def draw_base(color):
+    s = 6000
+    glColor3f(*color)
+    glBegin(GL_QUADS)
+    glVertex3f(-s, -s, -1); glVertex3f(s, -s, -1); glVertex3f(s, s, -1); glVertex3f(-s, s, -1)
+    glEnd()
+
+
 
 
 
