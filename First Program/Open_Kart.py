@@ -1,0 +1,30 @@
+from OpenGL.GL import *
+from OpenGL.GLUT import *
+from OpenGL.GLU import *
+import math, random, time
+
+
+
+
+camera_view = 'chase'
+fovY = 60
+fovY_map_select = 100
+menu_cam_height = 2500.0
+SCREEN_W = 1280
+SCREEN_H = 720
+
+
+STATE_MENU = 0
+STATE_PLAY_MAP_SELECT = 1  
+STATE_PLAY_DRIVE = 2
+STATE_EXPLORE = 3
+STATE_COMPETE = 4
+
+game_state = STATE_MENU
+menu_options = ["Play", "Explore", "Compete", "Exit"]
+menu_index = 0
+camera_pos = (0, 500, 500)
+current_map = 1
+map_select_target = 'play'  
+app_should_exit = False
+last_error_message = ""
