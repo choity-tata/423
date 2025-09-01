@@ -2478,6 +2478,20 @@ def draw_projectiles():
         glRotatef(90, 0, 1, 0)
         gluCylinder(q_cyl, 3.0, 3.0, 14.0, 10, 1)
         glPopMatrix()
+
+def draw_ammo_counters():
+    
+    rad = math.radians(kart_dir)
+    nx, ny = -math.sin(rad), math.cos(rad)
+    left_x = kart_pos[0] + nx * 34.0
+    left_y = kart_pos[1] + ny * 34.0
+    right_x = kart_pos[0] - nx * 34.0
+    right_y = kart_pos[1] - ny * 34.0
+    sx, sy = world_to_screen(left_x, left_y, 10.0)
+    draw_text(sx, sy, f"{rifle_ammo}/10")
+    sx2, sy2 = world_to_screen(right_x, right_y, 10.0)
+    draw_text(sx2, sy2, f"{missile_ammo}/3")
+
 #---------------------------------------------------------------
 def main():
     glutInit()
