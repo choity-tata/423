@@ -1067,6 +1067,58 @@ def check_player_ai_collisions():
                 A['pause_timer'] = max(A.get('pause_timer',0.0), 0.3)
                 stun_timer = max(stun_timer, 0.3)
             collision_count += 1
+
+def build_obstacles_for_map(m, count=12):
+    global obstacles
+    random.seed(42)
+    obstacles = []
+    outer, inner = get_track_polylines_for_map(m)
+    n = len(outer)
+    
+    fi, ft = get_finish_marker(m)
+    (sx, sy), _ = get_center_and_tangent(outer, inner, fi, ft)
+    
+    avoid_window = min(6, max(1, n // 12))
+    
+    finish_exclusion_r = 800.0
+    r2 = finish_exclusion_r * finish_exclusion_r
+    for _ in range(count):
+        tries = 0
+        while True:
+            i = random.randrange(0, n)
+            j = (i + 1) % n
+            
+            close_seg = ((i - fi) % n <= avoid_window) or ((fi - i) % n <= avoid_window)
+            
+            t = random.uniform(0.2, 0.8)
+            cx = 0.5*(outer[i][0]*(1-t)+outer[j][0]*t + inner[i][0]*(1-t)+inner[j][0]*t)
+            cy = 0.5*(outer[i][1]*(1-t)+outer[j][1]*t + inner[i][1]*(1-t)+inner[j][1]*t)
+            nx, ny = _seg_normal(outer[i], outer[j])
+            off = random.uniform(-18.0, 18.0)
+            ox, oy = cx + nx*off, cy + ny*off
+            close_finish = (ox - sx)*(ox - sx) + (oy - sy)*(oy - sy) < r2
+            if not (close_seg or close_finish):
+                obstacles.append({"x": ox, "y": oy, "r": 16.0, "active": True, "respawn": 0.0})
+                break
+            tries += 1
+            if tries > 200:
+                
+                best_d2 = -1.0; best = None
+                for _ in range(20):
+                    ii = random.randrange(0, n); jj = (ii + 1) % n
+                    tt = random.uniform(0.2, 0.8)
+                    ccx = 0.5*(outer[ii][0]*(1-tt)+outer[jj][0]*tt + inner[ii][0]*(1-tt)+inner[jj][0]*tt)
+                    ccy = 0.5*(outer[ii][1]*(1-tt)+outer[jj][1]*tt + inner[ii][1]*(1-tt)+inner[jj][1]*tt)
+                    nnx, nny = _seg_normal(outer[ii], outer[jj])
+                    ooff = random.uniform(-18.0, 18.0)
+                    px, py = ccx + nnx*ooff, ccy + nny*ooff
+                    d2 = (px - sx)*(px - sx) + (py - sy)*(py - sy)
+                    if d2 > best_d2 and ((ii - fi) % n > avoid_window and (fi - ii) % n > avoid_window):
+                        best_d2 = d2; best = (px, py)
+                if best is None:
+                    best = (ox, oy)
+                obstacles.append({"x": best[0], "y": best[1], "r": 16.0, "active": True, "respawn": 0.0})
+                break
 #---------------------------------------------------------------
 def main():
     glutInit()
