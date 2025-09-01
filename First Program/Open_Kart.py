@@ -1373,6 +1373,11 @@ def draw_coin_at(x, y):
     glColor3f(0.95, 0.80, 0.22)  
     gluCylinder(q_cyl, 10.0, 10.0, 2.0, 24, 1)
     glPopMatrix()
+
+def draw_coins():
+    for c in coins:
+        if c["active"]:
+            draw_coin_at(c["x"], c["y"])
 #---------------------------------------------------------------
 def main():
     glutInit()
