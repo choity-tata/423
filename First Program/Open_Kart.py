@@ -1342,6 +1342,28 @@ def build_coins_for_map(m):
     for _ in range(n):
         x, y = _rand_point_in_poly(inner)
         coins.append({"x": x, "y": y, "active": True, "timer": 0.0})
+
+def update_coins(dt):
+    global coin_spin, coin_bob_t, coins_collected, explore_timer_active, explore_timer
+    coin_spin = (coin_spin + 60.0 * dt) % 360.0
+    coin_bob_t += dt
+    for c in coins:
+        if c["active"]:
+            dx = explore_pos[0] - c["x"]; dy = explore_pos[1] - c["y"]
+            if dx*dx + dy*dy <= (24.0*24.0):
+                c["active"] = False
+                c["timer"] = random.uniform(3.0, 7.0)
+                coins_collected += 1
+                
+                if not explore_timer_active:
+                    explore_timer_active = True
+                    explore_timer = 10.0
+                else:
+                    explore_timer += 5.0
+        else:
+            c["timer"] -= dt
+            if c["timer"] <= 0.0:
+                c["active"] = True
 #---------------------------------------------------------------
 def main():
     glutInit()
