@@ -1002,6 +1002,71 @@ def update_ais(dt):
         A['pos'][0], A['pos'][1], A['pos'][2] = cx + nx * A['lane'], cy + ny * A['lane'], 0.0
         A['dir'] = ang
 
+def check_player_ai_collisions():
+    global stun_timer, collision_count, kart_speed
+    
+    if autopilot_timer > 0.0:
+        return
+    if not ai_enabled or not race_started or not ais: return
+    outer, inner = get_track_polylines_for_map(current_map)
+    for A in ais:
+        dx = kart_pos[0] - A['pos'][0]; dy = kart_pos[1] - A['pos'][1]
+        sum_r = kart_collision_radius * 2
+        if dx*dx + dy*dy <= sum_r*sum_r:
+            
+            d = math.hypot(dx, dy) or 1.0
+            nx, ny = dx/d, dy/d
+            push = (sum_r - d) * 0.5
+            kart_pos[0] += nx * push; kart_pos[1] += ny * push
+            
+            p_seg, p_t, _ = closest_center_param(outer, inner, kart_pos[0], kart_pos[1])
+            a_seg, a_t, _ = closest_center_param(outer, inner, A['pos'][0], A['pos'][1])
+            nsegs = len(outer)
+            prog_p = normalized_progress(p_seg, p_t, p_seg, nsegs, start_t=p_t)
+            prog_a = normalized_progress(a_seg, a_t, p_seg, nsegs, start_t=p_t)
+            if prog_a < prog_p - 1e-6:
+                
+                fwdx, fwdy = math.cos(math.radians(kart_dir)), math.sin(math.radians(kart_dir))
+                vax, vay = A['pos'][0] - kart_pos[0], A['pos'][1] - kart_pos[1]
+                if (fwdx * vax + fwdy * vay) < 0.0:
+                    A['stop_timer'] = max(A.get('stop_timer', 0.0), stun_duration_on_bump)
+                else:
+                    A['pause_timer'] = max(A.get('pause_timer', 0.0), stun_duration_on_bump * 0.5)
+                
+                back = 180.0
+                new_seg, new_t = _step_back_center_param(outer, a_seg, a_t, back)
+                (cx, cy), ang = get_center_and_tangent(outer, inner, new_seg, new_t)
+                j = (new_seg + 1) % len(outer)
+                ddx = outer[j][0] - outer[new_seg][0]; ddy = outer[j][1] - outer[new_seg][1]
+                LL = math.hypot(ddx, ddy) or 1.0
+                nnx, nny = (-ddy/LL, ddx/LL)
+                lane = A.get('lane', 0.0)
+                A['seg'], A['t'] = new_seg, new_t
+                A['pos'][0], A['pos'][1], A['pos'][2] = cx + nnx*lane, cy + nny*lane, 0.0
+                A['dir'] = ang
+                A['lap_guard'] = 2.0
+            elif prog_p < prog_a - 1e-6:
+                stun_timer = max(stun_timer, stun_duration_on_bump)
+                kart_speed = 0.0
+                
+                back = 180.0
+                
+                (ccx, ccy) = closest_center_param(outer, inner, kart_pos[0], kart_pos[1])[2]
+                jj = (p_seg + 1) % len(outer)
+                ddx = outer[jj][0] - outer[p_seg][0]; ddy = outer[jj][1] - outer[p_seg][1]
+                LL = math.hypot(ddx, ddy) or 1.0
+                nnx, nny = (-ddy/LL, ddx/LL)
+                lane = (kart_pos[0] - ccx)*nnx + (kart_pos[1] - ccy)*nny
+                new_seg, new_t = _step_back_center_param(outer, p_seg, p_t, back)
+                (cx, cy), ang = get_center_and_tangent(outer, inner, new_seg, new_t)
+                kart_pos[0], kart_pos[1] = cx + nnx*lane, cy + nny*lane
+                globals()['kart_dir'] = ang
+                globals()['kart_speed'] = 0.0
+                globals()['lap_guard_player'] = 2.0
+            else:
+                A['pause_timer'] = max(A.get('pause_timer',0.0), 0.3)
+                stun_timer = max(stun_timer, 0.3)
+            collision_count += 1
 #---------------------------------------------------------------
 def main():
     glutInit()
