@@ -1164,6 +1164,31 @@ def draw_blue_orbs():
             glColor3f(0.2, 0.5, 1.0)
             gluSphere(q_sph, 6.0, 12, 10)
             glPopMatrix()
+
+def check_orb_pickups_play():
+    for orb in blue_orbs:
+        if not orb['active']: continue
+        dx = kart_pos[0] - orb['x']; dy = kart_pos[1] - orb['y']
+        if dx*dx + dy*dy <= (24.0*24.0):
+            orb['active'] = False
+            orb['respawn'] = random.uniform(4.0, 9.0)
+            
+            globals()['orb_boost_timer_play'] = max(globals().get('orb_boost_timer_play', 0.0), 4.0)
+
+def check_orb_pickups_compete():
+    for orb in blue_orbs:
+        if not orb['active']: continue
+        
+        dx = p1_pos[0] - orb['x']; dy = p1_pos[1] - orb['y']
+        if dx*dx + dy*dy <= (24.0*24.0):
+            orb['active'] = False; orb['respawn'] = random.uniform(4.0, 9.0)
+            globals()['p1_orb_boost_timer'] = max(globals().get('p1_orb_boost_timer', 0.0), 4.0)
+            continue
+        
+        dx = p2_pos[0] - orb['x']; dy = p2_pos[1] - orb['y']
+        if dx*dx + dy*dy <= (24.0*24.0):
+            orb['active'] = False; orb['respawn'] = random.uniform(4.0, 9.0)
+            globals()['p2_orb_boost_timer'] = max(globals().get('p2_orb_boost_timer', 0.0), 4.0)
 #---------------------------------------------------------------
 def main():
     glutInit()
