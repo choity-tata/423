@@ -1694,6 +1694,46 @@ def check_pvp_collision():
             if p2_hit_cd <= 0.0:
                 p2_collision_count += 1; p2_hit_cd = 0.5
 
+def setupCamera_common_projection(aspect, map_select=False):
+    glMatrixMode(GL_PROJECTION); glLoadIdentity()
+    if map_select:
+        outer, _ = get_track_polylines_for_map(current_map)
+        max_r = 0.0
+        for x, y in outer:
+            r = math.hypot(x, y)
+            if r > max_r:
+                max_r = r
+        margin = 1.20
+        r = max_r * margin
+        glOrtho(-r, r, -r, r, -10000.0, 10000.0)
+    else:
+        gluPerspective(fovY, aspect, 0.1, 20000.0)
+    glMatrixMode(GL_MODELVIEW); glLoadIdentity()
+
+def setupCamera_play():
+    dx = math.cos(math.radians(kart_dir)); dy = math.sin(math.radians(kart_dir))
+    px, py = kart_pos[0], kart_pos[1]
+    if first_person:
+        
+        cx = px + dx * 32.0; cy = py + dy * 32.0; cz = 22.0
+        tx = px + dx * 160.0; ty = py + dy * 160.0; tz = 16.0
+    elif camera_view == 'left':
+        lx, ly = -dy, dx; cx = px + lx * 140.0; cy = py + ly * 140.0; cz = 85.0; tx, ty, tz = px, py, 18.0
+    elif camera_view == 'right':
+        lx, ly = -dy, dx; cx = px - lx * 140.0; cy = py - ly * 140.0; cz = 85.0; tx, ty, tz = px, py, 18.0
+    elif camera_view == 'front':
+        cx = px + dx * 160.0; cy = py + dy * 160.0; cz = 85.0; tx = px - dx * 30.0; ty = py - dy * 30.0; tz = 16.0
+    elif camera_view == 'cockpit':
+        
+        cx = px + dx * 10.0; cy = py + dy * 10.0; cz = 18.0
+        tx = px + dx * 120.0; ty = py + dy * 120.0; tz = 16.0
+    elif camera_view == 'hood':
+        
+        cx = px + dx * 32.0; cy = py + dy * 32.0; cz = 22.0
+        tx = px + dx * 160.0; ty = py + dy * 160.0; tz = 16.0
+    else:
+        cx = px - dx * 200.0; cy = py - dy * 200.0; cz = 110.0; tx = px + dx * 60.0; ty = py + dy * 60.0; tz = 16.0
+    gluLookAt(cx, cy, cz, tx, ty, tz, 0, 0, 1)
 #---------------------------------------------------------------
 def main():
     glutInit()
