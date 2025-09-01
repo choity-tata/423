@@ -191,6 +191,32 @@ def poly_centroid(poly):
     return sx, sy
 
 
+q_sph = None
+q_cyl = None
+decor_cache = {1: None, 2: None, 3: None}
+
+def draw_tree(x, y, s=1.0):
+    glPushMatrix(); glTranslatef(x, y, 0); glScalef(s, s, s)
+    glColor3f(0.35, 0.20, 0.05); gluCylinder(q_cyl, 6, 6, 32, 10, 1)
+    glTranslatef(0, 0, 32); glColor3f(0.10, 0.55, 0.20); gluSphere(q_sph, 16, 12, 10)
+    glTranslatef(0, 0, 12); gluSphere(q_sph, 12, 12, 10)
+    glPopMatrix()
+
+def draw_ice(x, y, s=1.0):
+    glPushMatrix(); glTranslatef(x, y, 0); glScalef(s, s, s)
+    glColor3f(0.80, 0.90, 0.98); glutSolidCube(22)
+    glTranslatef(0, 0, 16); gluSphere(q_sph, 12, 12, 10)
+    glTranslatef(0, 0, 10); gluSphere(q_sph, 8, 12, 10)
+    glPopMatrix()
+
+def draw_rock(x, y, s=1.0):
+    glPushMatrix(); glTranslatef(x, y, 0); glScalef(s, s, s)
+    glColor3f(0.30, 0.30, 0.33); gluSphere(q_sph, 14, 12, 10)
+    glTranslatef(10, 6, 2); gluSphere(q_sph, 9, 12, 10)
+    glTranslatef(-12, -8, 4); gluSphere(q_sph, 7, 12, 10)
+    glPopMatrix()
+
+
 #---------------------------------------------------------------
 def main():
     glutInit()
