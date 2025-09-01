@@ -608,6 +608,128 @@ def _step_forward_center_param(outer, seg, t, fwd_len):
             cur_seg = (cur_seg + 1) % n
             cur_t = 0.0
     return cur_seg, cur_t
+
+def update_laps_play():
+    """Update lap counters for player and AIs; stop race at 2 laps.
+    Skips the first wrap detection right after race start so the race doesn't begin at 1/2.
+    """
+    global prev_prog_player, player_lap, game_over, play_winner, lap_guard_player
+    global prev_prog_ais, ai_laps, ignore_first_wrap_player, player_position
+    if game_over:
+        return
+    outer, inner = get_track_polylines_for_map(current_map)
+    nsegs = len(outer)
+
+    # Current player progress along centerline
+    p_seg, p_t, _ = closest_center_param(outer, inner, kart_pos[0], kart_pos[1])
+    prog_p = normalized_progress(p_seg, p_t, start_seg_play, nsegs, start_t=start_t_play)
+
+    # Compute finish gate signed distance along tangent and across-track distance
+    fi, ft = get_finish_marker(current_map)
+    (fx, fy), fang = get_center_and_tangent(outer, inner, fi, ft)
+    urad = math.radians(fang)
+    ux, uy = math.cos(urad), math.sin(urad)       # tangent (gate normal)
+    nx, ny = -uy, ux                              # across-track axis
+    # Track width at finish for gating
+    jfi = (fi + 1) % len(outer)
+    oA = (outer[fi][0]*(1-ft)+outer[jfi][0]*ft, outer[fi][1]*(1-ft)+outer[jfi][1]*ft)
+    iA = (inner[fi][0]*(1-ft)+inner[jfi][0]*ft, inner[fi][1]*(1-ft)+inner[jfi][1]*ft)
+    track_w = math.hypot(oA[0]-iA[0], oA[1]-iA[1])
+    # Signed distances
+    rx, ry = kart_pos[0] - fx, kart_pos[1] - fy
+    finish_dot_cur = rx*ux + ry*uy      # along tangent; gate plane is 0
+    across = abs(rx*nx + ry*ny)
+
+    # Require a clear sign change with small epsilon and forward motion along the track
+    # to avoid false triggers at spawn.
+    CROSS_EPS = 5.0
+    vel_fwd = math.cos(math.radians(kart_dir)) * ux + math.sin(math.radians(kart_dir)) * uy
+    crossed_finish_gate = (
+        globals().get('finish_dot_player_prev') is not None and
+        vel_fwd > 0.2 and
+        globals()['finish_dot_player_prev'] <= -CROSS_EPS and finish_dot_cur >= CROSS_EPS and
+        across <= track_w * 0.75
+    )
+
+    wrapped = (prog_p + 0.5 < prev_prog_player)
+    if lap_guard_player > 0.0:
+        # During guard (e.g., after collision/respawn), only count a physical
+        # finish gate crossing. Do not advance prev_prog while in guard.
+        if crossed_finish_gate:
+            if ignore_first_wrap_player:
+                ignore_first_wrap_player = False
+            else:
+                player_lap += 1
+    else:
+        # First event (either wrap or gate) arms; subsequent events increment.
+        if wrapped or crossed_finish_gate:
+            if ignore_first_wrap_player:
+                ignore_first_wrap_player = False
+            else:
+                player_lap += 1
+    # Only advance prev progress when not in guard
+    if lap_guard_player <= 0.0:
+        prev_prog_player = prog_p
+    globals()['finish_dot_player_prev'] = finish_dot_cur
+    
+    # AI lap updates (if any AIs are present)
+    for idx, A in enumerate(ais):
+        a_seg, a_t, _ = closest_center_param(outer, inner, A['pos'][0], A['pos'][1])
+        prog_a = normalized_progress(a_seg, a_t, start_seg_play, nsegs, start_t=start_t_play)
+        # Finish gate crossing for AI
+        rax, ray = A['pos'][0] - fx, A['pos'][1] - fy
+        ad = rax*ux + ray*uy
+        a_across = abs(rax*nx + ray*ny)
+        crossed_ai_gate = (
+            idx < len(globals().get('finish_dot_ais_prev', [])) and
+            globals()['finish_dot_ais_prev'][idx] is not None and
+            globals()['finish_dot_ais_prev'][idx] <= -CROSS_EPS and ad >= CROSS_EPS and
+            a_across <= track_w * 0.75
+        )
+
+        if A.get('lap_guard', 0.0) > 0.0:
+            # Like player, only count physical crossing; don't advance prev prog
+            if crossed_ai_gate:
+                ai_laps[idx] += 1
+        else:
+            wrapped_ai = (prog_a + 0.5 < prev_prog_ais[idx])
+            if wrapped_ai or crossed_ai_gate:
+                ai_laps[idx] += 1
+        # Only advance prev when not in guard
+        if A.get('lap_guard', 0.0) <= 0.0:
+            prev_prog_ais[idx] = prog_a
+        # update AI gate cache
+        if idx >= len(globals()['finish_dot_ais_prev']):
+            globals()['finish_dot_ais_prev'].extend([None] * (idx - len(globals()['finish_dot_ais_prev']) + 1))
+        globals()['finish_dot_ais_prev'][idx] = ad
+    
+    try:
+        player_total = player_lap + (prog_p / max(1, nsegs))
+        ahead = 0
+        for idx, A in enumerate(ais):
+            a_seg, a_t, _ = closest_center_param(outer, inner, A['pos'][0], A['pos'][1])
+            prog_a2 = normalized_progress(a_seg, a_t, start_seg_play, nsegs, start_t=start_t_play)
+            ai_total = ai_laps[idx] + (prog_a2 / max(1, nsegs))
+            if ai_total > player_total + 1e-6:
+                ahead += 1
+        player_position = 1 + ahead
+    except Exception:
+        pass
+    
+    if player_lap >= 2 or any(l >= 2 for l in ai_laps):
+        game_over = True
+        if player_lap >= 2 and any(l >= 2 for l in ai_laps):
+            play_winner = "Photo Finish!"
+        elif player_lap >= 2:
+            play_winner = "You Win!"
+        else:
+            play_winner = "Opponent Wins!"
+
+
+
+
+
+
 #---------------------------------------------------------------
 def main():
     glutInit()
