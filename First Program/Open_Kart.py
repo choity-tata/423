@@ -725,8 +725,74 @@ def update_laps_play():
         else:
             play_winner = "Opponent Wins!"
 
+def update_laps_compete():
+    """Update lap counters and detect winner in compete mode.
+    Skips the first wrap detection for both players so laps don't start at 1/2.
+    """
+    global prev_prog_p1, prev_prog_p2, p1_lap, p2_lap, compete_over, compete_winner
+    global ignore_first_wrap_p1, ignore_first_wrap_p2
+    if compete_over:
+        return
+    outer, inner = get_track_polylines_for_map(current_map)
+    nsegs = len(outer)
+    s1, t1, _ = closest_center_param(outer, inner, p1_pos[0], p1_pos[1])
+    s2, t2, _ = closest_center_param(outer, inner, p2_pos[0], p2_pos[1])
+    prog1 = normalized_progress(s1, t1, comp_start_seg, nsegs, start_t=comp_start_t)
+    prog2 = normalized_progress(s2, t2, comp_start_seg, nsegs, start_t=comp_start_t)
+    # Finish gate based detection (robust across polygonal maps)
+    fi, ft = get_finish_marker(current_map)
+    (fx, fy), fang = get_center_and_tangent(outer, inner, fi, ft)
+    urad = math.radians(fang)
+    ux, uy = math.cos(urad), math.sin(urad)
+    nx, ny = -uy, ux
+    jfi = (fi + 1) % len(outer)
+    oA = (outer[fi][0]*(1-ft)+outer[jfi][0]*ft, outer[fi][1]*(1-ft)+outer[jfi][1]*ft)
+    iA = (inner[fi][0]*(1-ft)+inner[jfi][0]*ft, inner[fi][1]*(1-ft)+inner[jfi][1]*ft)
+    track_w = math.hypot(oA[0]-iA[0], oA[1]-iA[1])
 
+    r1x, r1y = p1_pos[0] - fx, p1_pos[1] - fy
+    r2x, r2y = p2_pos[0] - fx, p2_pos[1] - fy
+    d1 = r1x*ux + r1y*uy
+    d2 = r2x*ux + r2y*uy
+    a1 = abs(r1x*nx + r1y*ny)
+    a2 = abs(r2x*nx + r2y*ny)
 
+    CROSS_EPS = 5.0
+    # Require forward crossing along track direction to count
+    v1_fwd = math.cos(math.radians(p1_dir)) * ux + math.sin(math.radians(p1_dir)) * uy
+    v2_fwd = math.cos(math.radians(p2_dir)) * ux + math.sin(math.radians(p2_dir)) * uy
+    crossed1 = (
+        globals().get('finish_dot_p1_prev') is not None and v1_fwd > 0.2 and
+        globals()['finish_dot_p1_prev'] <= -CROSS_EPS and d1 >= CROSS_EPS and a1 <= track_w * 0.75)
+    crossed2 = (
+        globals().get('finish_dot_p2_prev') is not None and v2_fwd > 0.2 and
+        globals()['finish_dot_p2_prev'] <= -CROSS_EPS and d2 >= CROSS_EPS and a2 <= track_w * 0.75)
+
+    wrapped1 = (prog1 + 0.5 < prev_prog_p1)
+    wrapped2 = (prog2 + 0.5 < prev_prog_p2)
+
+    if wrapped1 or crossed1:
+        if ignore_first_wrap_p1:
+            ignore_first_wrap_p1 = False
+        else:
+            p1_lap += 1
+    if wrapped2 or crossed2:
+        if ignore_first_wrap_p2:
+            ignore_first_wrap_p2 = False
+        else:
+            p2_lap += 1
+    prev_prog_p1 = prog1
+    prev_prog_p2 = prog2
+    globals()['finish_dot_p1_prev'] = d1
+    globals()['finish_dot_p2_prev'] = d2
+    if p1_lap >= 2 or p2_lap >= 2:
+        compete_over = True
+        if p1_lap >= 2 and p2_lap >= 2:
+            compete_winner = "Draw!"
+        elif p1_lap >= 2:
+            compete_winner = "Player 1 Wins!"
+        else:
+            compete_winner = "Player 2 Wins!"
 
 
 
