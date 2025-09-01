@@ -1189,6 +1189,69 @@ def check_orb_pickups_compete():
         if dx*dx + dy*dy <= (24.0*24.0):
             orb['active'] = False; orb['respawn'] = random.uniform(4.0, 9.0)
             globals()['p2_orb_boost_timer'] = max(globals().get('p2_orb_boost_timer', 0.0), 4.0)
+
+def check_obstacle_collisions_play():
+    global kart_speed, collision_count, boundary_hit_cooldown, stun_timer
+    
+    
+    if autopilot_timer <= 0.0:
+        for ob in obstacles:
+            if not ob.get('active', True): continue
+            dx = kart_pos[0] - ob['x']; dy = kart_pos[1] - ob['y']
+            rr = (ob['r'] + kart_collision_radius)
+            d2 = dx*dx + dy*dy
+            if d2 <= rr*rr:
+                
+                d = math.hypot(dx, dy) or 1.0
+                nx, ny = dx/d, dy/d
+                push = (rr + 2.0) - d
+                if push > 0:
+                    kart_pos[0] += nx * push
+                    kart_pos[1] += ny * push
+                kart_speed = 0.0
+                stun_timer = max(stun_timer, 0.3)
+                if boundary_hit_cooldown <= 0.0:
+                    collision_count += 1
+                    boundary_hit_cooldown = 0.5
+                
+                ob['active'] = False
+                ob['respawn'] = random.uniform(1.0, 3.0)
+    
+    for A in ais:
+        for ob in obstacles:
+            if not ob.get('active', True): continue
+            dx = A['pos'][0] - ob['x']; dy = A['pos'][1] - ob['y']
+            rr = (ob['r'] + kart_collision_radius)
+            d2 = dx*dx + dy*dy
+            if d2 <= rr*rr:
+                d = math.hypot(dx, dy) or 1.0
+                nx, ny = dx/d, dy/d
+                push = (rr + 2.0) - d
+                if push > 0:
+                    A['pos'][0] += nx * push
+                    A['pos'][1] += ny * push
+                A['pause_timer'] = max(A.get('pause_timer',0.0), 0.3)
+                
+                ob['active'] = False
+                ob['respawn'] = random.uniform(1.0, 3.0)
+
+def update_obstacle_respawn(dt):
+    for ob in obstacles:
+        if not ob['active']:
+            ob['respawn'] -= dt
+            if ob['respawn'] <= 0.0:
+                ob['active'] = True
+
+def enforce_collision_and_lives():
+    global collision_count, lives, race_started, game_over
+    if game_over: return
+    if collision_count >= max_collisions_before_life_loss:
+        lives = max(0, lives - 1)
+        collision_count = 0
+        race_started = False
+    if lives <= 0:
+        game_over = True
+
 #---------------------------------------------------------------
 def main():
     glutInit()
