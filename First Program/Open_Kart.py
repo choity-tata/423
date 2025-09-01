@@ -528,6 +528,16 @@ def get_dt():
     dt = now - get_dt.prev
     get_dt.prev = now
     return max(0.0, min(dt, 0.05))
+
+def get_center_and_tangent(outer, inner, idx, t):
+    n = len(outer); i = idx % n; j = (i + 1) % n
+    def mix(a, b, s): return (a[0]*(1-s)+b[0]*s, a[1]*(1-s)+b[1]*s)
+    o = mix(outer[i], outer[j], t)
+    inn = mix(inner[i], inner[j], t)
+    cx = 0.5*(o[0] + inn[0]); cy = 0.5*(o[1] + inn[1])
+    tx = outer[j][0] - outer[i][0]; ty = outer[j][1] - outer[i][1]
+    ang = math.degrees(math.atan2(ty, tx))
+    return (cx, cy), ang
 #---------------------------------------------------------------
 def main():
     glutInit()
