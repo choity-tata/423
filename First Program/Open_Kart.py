@@ -41,3 +41,18 @@ def draw_text(x, y, text, font=GLUT_BITMAP_HELVETICA_18, rgb=(1,1,1)):
     glPopMatrix()
     glMatrixMode(GL_PROJECTION); glPopMatrix()
     glMatrixMode(GL_MODELVIEW)
+
+def quad(v0, v1, v2, v3, col):
+    glColor3f(*col)
+    glBegin(GL_QUADS)
+    glVertex3f(*v0); glVertex3f(*v1); glVertex3f(*v2); glVertex3f(*v3)
+    glEnd()
+
+def set_clear_color_for_map():
+    if current_map == 1:
+        glClearColor(0.50, 0.70, 0.90, 1.0)
+    elif current_map == 2:
+        glClearColor(0.80, 0.85, 0.95, 1.0)
+    else:
+        glClearColor(0.10, 0.12, 0.15, 1.0)
+
