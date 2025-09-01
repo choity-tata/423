@@ -1734,6 +1734,24 @@ def setupCamera_play():
     else:
         cx = px - dx * 200.0; cy = py - dy * 200.0; cz = 110.0; tx = px + dx * 60.0; ty = py + dy * 60.0; tz = 16.0
     gluLookAt(cx, cy, cz, tx, ty, tz, 0, 0, 1)
+
+def setupCamera_explore():
+    rad = math.radians(explore_dir); fx, fy = math.cos(rad), math.sin(rad)
+    if first_person:
+        
+        cx = explore_pos[0]; cy = explore_pos[1]; cz = 38.0
+        tx = explore_pos[0] + fx * 120.0; ty = explore_pos[1] + fy * 120.0; tz = 24.0
+    else:
+        cx = explore_pos[0] - fx * explore_cam_dist
+        cy = explore_pos[1] - fy * explore_cam_dist
+        cz = explore_cam_height
+        tx = explore_pos[0] + fx * explore_cam_look_ahead
+        ty = explore_pos[1] + fy * explore_cam_look_ahead
+        tz = 12.0
+    gluLookAt(cx, cy, cz,  tx, ty, tz,  0, 0, 1)
+
+def setupCamera_mapselect():
+    gluLookAt(0.0, 0.0, 1000.0,  0.0, 0.0, 0.0,  0.0, 1.0, 0.0)
 #---------------------------------------------------------------
 def main():
     glutInit()
