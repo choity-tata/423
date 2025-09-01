@@ -1781,6 +1781,23 @@ def draw_compete_overlay():
     draw_text(SCREEN_W//2 - 260, SCREEN_H//2 - 40, "Press Esc for Main Menu or Enter to Map Select")
     glPopAttrib()
 
+def draw_play_scene():
+    set_clear_color_for_map()
+    draw_track()
+    draw_obstacles(); draw_blue_orbs()
+    
+    if ai_enabled:
+        for A in ais:
+            draw_kart_at(A['pos'], A['dir'], body_color=(0.10, 0.25, 0.85))
+    draw_kart_at(kart_pos, kart_dir, body_color=(0.85, 0.10, 0.10))
+    draw_projectiles()
+    draw_ammo_counters()
+    draw_autopilot_timer_over_kart()
+    draw_hud_play()
+    if last_error_message:
+        draw_text(10, 650, f"Error: {last_error_message}", rgb=(1,0.4,0.4))
+    if game_over:
+        draw_game_over_overlay()
 #---------------------------------------------------------------
 def main():
     glutInit()
