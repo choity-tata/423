@@ -1752,6 +1752,18 @@ def setupCamera_explore():
 
 def setupCamera_mapselect():
     gluLookAt(0.0, 0.0, 1000.0,  0.0, 0.0, 0.0,  0.0, 1.0, 0.0)
+
+def setupCamera_compete_for(pos, dir_deg):
+    dx = math.cos(math.radians(dir_deg)); dy = math.sin(math.radians(dir_deg))
+    px, py = pos[0], pos[1]
+    if first_person:
+        cx = px + dx * 32.0; cy = py + dy * 32.0; cz = 22.0
+        tx = px + dx * 160.0;  ty = py + dy * 160.0;  tz = 16.0
+    else:
+        cx = px - dx * 200.0; cy = py - dy * 200.0; cz = 110.0
+        tx = px + dx * 60.0;  ty = py + dy * 60.0;  tz = 16.0
+    gluLookAt(cx, cy, cz, tx, ty, tz, 0, 0, 1)
+
 #---------------------------------------------------------------
 def main():
     glutInit()
