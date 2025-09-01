@@ -2504,6 +2504,25 @@ def draw_ammo_counters_for(pos_xy, dir_deg, rifle, missile):
     draw_text(sx, sy, f"{rifle}/10")
     sx2, sy2 = world_to_screen(right_x, right_y, 10.0)
     draw_text(sx2, sy2, f"{missile}/3")
+
+def draw_autopilot_timer_over_kart():
+    
+    
+    has_ap = autopilot_timer > 0.0
+    has_sp = boost_timer > 0.0
+    if not (has_ap or has_sp):
+        return
+    sx, sy = world_to_screen(kart_pos[0], kart_pos[1], 22.0)
+    line_y = int(sy) + 14
+    x = int(sx) - 10
+    if has_ap:
+        ap_secs = int(math.ceil(autopilot_timer))
+        draw_text(x, line_y, f"AP:{ap_secs}", rgb=(0.6, 0.9, 1.0))
+        line_y += 14
+    if has_sp:
+        sp_secs = int(math.ceil(boost_timer))
+        
+        draw_text(x, line_y, f"SP:{sp_secs}", rgb=(1.0, 0.85, 0.20))
 #---------------------------------------------------------------
 def main():
     glutInit()
