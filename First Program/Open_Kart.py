@@ -572,6 +572,24 @@ def normalized_progress(seg, t, start_seg, nsegs, start_t=0.0):
     
     rel = (cur - start) % nsegs
     return rel
+
+def _step_back_center_param(outer, seg, t, back_len):
+    """Move backward along the centerline by back_len units; return (seg,t)."""
+    n = len(outer)
+    cur_seg = seg % n
+    cur_t = max(0.0, min(1.0, t))
+    remain = max(0.0, back_len)
+    while remain > 1e-6:
+        seg_len = _segment_length(outer, cur_seg)
+        dist_on_seg = cur_t * max(seg_len, 1e-6)
+        if remain <= dist_on_seg:
+            new_t = (dist_on_seg - remain) / max(seg_len, 1e-6)
+            return cur_seg, max(0.0, min(1.0, new_t))
+        else:
+            remain -= dist_on_seg
+            cur_seg = (cur_seg - 1) % n
+            cur_t = 1.0
+    return cur_seg, cur_t
 #---------------------------------------------------------------
 def main():
     glutInit()
