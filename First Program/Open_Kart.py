@@ -1124,6 +1124,20 @@ def draw_obstacles():
     for ob in obstacles:
         if ob.get('active', True):
             draw_rock(ob['x'], ob['y'], s=0.9)
+
+def build_blue_orbs_for_map(m, count=10):
+    global blue_orbs
+    blue_orbs = []
+    outer, inner = get_track_polylines_for_map(m)
+    n = len(outer)
+    for _ in range(count):
+        i = random.randrange(0, n); j = (i + 1) % n
+        t = random.uniform(0.05, 0.95)
+        cx = 0.5*(outer[i][0]*(1-t)+outer[j][0]*t + inner[i][0]*(1-t)+inner[j][0]*t)
+        cy = 0.5*(outer[i][1]*(1-t)+outer[j][1]*t + inner[i][1]*(1-t)+inner[j][1]*t)
+        nx, ny = _seg_normal(outer[i], outer[j])
+        lane = random.uniform(-22.0, 22.0)
+        blue_orbs.append({"x": cx + nx*lane, "y": cy + ny*lane, "active": True, "respawn": 0.0})
 #---------------------------------------------------------------
 def main():
     glutInit()
