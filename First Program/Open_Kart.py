@@ -538,6 +538,40 @@ def get_center_and_tangent(outer, inner, idx, t):
     tx = outer[j][0] - outer[i][0]; ty = outer[j][1] - outer[i][1]
     ang = math.degrees(math.atan2(ty, tx))
     return (cx, cy), ang
+
+def _segment_length(pts, i):
+    j = (i + 1) % len(pts)
+    dx = pts[j][0] - pts[i][0]; dy = pts[j][1] - pts[i][1]
+    return math.hypot(dx, dy)
+
+def closest_center_param(outer, inner, px, py):
+    """Return (seg_idx, t, center_point). Projects onto the road centerline polyline."""
+    best_d2 = 1e30; best = (0, 0.0, (0.0,0.0))
+    n = len(outer)
+    for i in range(n):
+        j = (i + 1) % n
+        c0x = 0.5*(outer[i][0] + inner[i][0]); c0y = 0.5*(outer[i][1] + inner[i][1])
+        c1x = 0.5*(outer[j][0] + inner[j][0]); c1y = 0.5*(outer[j][1] + inner[j][1])
+        vx, vy = (c1x - c0x, c1y - c0y)
+        vv = vx*vx + vy*vy or 1.0
+        wx, wy = (px - c0x, py - c0y)
+        t = max(0.0, min(1.0, (wx*vx + wy*vy)/vv))
+        cx, cy = (c0x + vx*t, c0y + vy*t)
+        d2 = (px - cx)**2 + (py - cy)**2
+        if d2 < best_d2:
+            best_d2 = d2
+            best = (i, t, (cx, cy))
+    return best
+
+def normalized_progress(seg, t, start_seg, nsegs, start_t=0.0):
+    """Return progress in [0, nsegs) relative to (start_seg,start_t).
+    Uses continuous parameter (seg + t) so wrap occurs exactly at the start fraction.
+    """
+    cur = (seg + t)
+    start = (start_seg + start_t)
+    
+    rel = (cur - start) % nsegs
+    return rel
 #---------------------------------------------------------------
 def main():
     glutInit()
