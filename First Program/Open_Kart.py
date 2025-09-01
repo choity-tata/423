@@ -1469,6 +1469,39 @@ def draw_explore_player():
     glPushMatrix(); glTranslatef(-6.5, 0.0, 18.0); glRotatef(+armSwing, 1, 0, 0); glTranslatef(0,0,-6); glScalef(1.6,1.6,12); glColor3f(0.90,0.75,0.55); glutSolidCube(1); glPopMatrix()
     glPushMatrix(); glTranslatef( 6.5, 0.0, 18.0); glRotatef(-armSwing, 1, 0, 0); glTranslatef(0,0,-6); glScalef(1.6,1.6,12); glColor3f(0.90,0.75,0.55); glutSolidCube(1); glPopMatrix()
     glPopMatrix()
+
+def draw_explore_scene():
+    set_clear_color_for_map()
+    draw_track()
+    draw_coins()
+    
+    for A in explore_ai:
+        draw_kart_at(A['pos'], A['dir'], body_color=(0.10, 0.25, 0.85))
+    draw_explore_player()
+    draw_text(10, SCREEN_H - 50, f"Coins: {coins_collected}")
+    if explore_timer_active:
+        draw_text(SCREEN_W - 180, SCREEN_H - 40, f"Time: {max(0,int(explore_timer))}s")
+    if explore_game_over:
+        glPushAttrib(GL_ENABLE_BIT); glDisable(GL_LIGHTING)
+        draw_text(SCREEN_W//2 - 140, SCREEN_H//2 + 20, "TIME UP! Explore Over")
+        draw_text(SCREEN_W//2 - 140, SCREEN_H//2 - 10, "Press M for Main Menu")
+        glPopAttrib()
+    
+    try:
+        rad = math.radians(explore_dir); nx, ny = -math.sin(rad), math.cos(rad)
+        left_x = explore_pos[0] + nx * 34.0; left_y = explore_pos[1] + ny * 34.0
+        right_x = explore_pos[0] - nx * 34.0; right_y = explore_pos[1] - ny * 34.0
+        sxL, syL = world_to_screen(left_x, left_y, 18.0)
+        sxR, syR = world_to_screen(right_x, right_y, 18.0)
+        
+        draw_text(sxL, syL, f"{explore_boost_charges}/2")
+        
+        skill_secs = int(explore_boost_active) if explore_boost_active > 0.0 else 0
+        refill_secs = int(explore_boost_cooldown) if explore_boost_charges < 2 else 0
+        draw_text(sxR, syR + 14, f"Skill Duration: {skill_secs}")
+        draw_text(sxR, syR - 2,  f"Refill Duration: {refill_secs}")
+    except Exception:
+        pass
 #---------------------------------------------------------------
 def main():
     glutInit()
