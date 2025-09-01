@@ -152,7 +152,43 @@ def draw_checker_finish_line_from_ring(outer_pts, inner_pts, idx, seg_frac,
             glEnd()
     glPopAttrib()
 
+def get_track_polylines_for_map(m):
+    if m == 1:
+        outer = gen_oval(0, 0, 3000, 1600, 72); inner = offset_inner_from_center(outer, 360); return outer, inner
+    if m == 2:
+        
+        outer = gen_regular_polygon(0, 0, 2300, 5, rot_deg=90.0, sx=1.0, sy=1.0); inner = offset_inner_from_center(outer, 360); return outer, inner
+    outer = gen_regular_polygon(0, 0, 2300, 4, rot_deg=45.0, sx=1.35, sy=1.0); inner = offset_inner_from_center(outer, 240); return outer, inner
 
+def get_finish_marker(m):
+    # The finish marker indicates the centerline segment index and fractional
+    # position (t) along that segment used for both drawing the checker line
+    # and anchoring lap progress normalization. On maps 2 and 3, using segment
+    # index 2 caused inconsistent wrap detection near corners. Anchor the
+    # finish to a straighter segment (index 0) for robust lap detection.
+    if m == 1: return 12, 0.5
+    if m == 2: return 0, 0.5
+    return 0, 0.5
+
+
+
+
+def point_in_poly(x, y, poly):
+    inside = False
+    n = len(poly)
+    for i in range(n):
+        j = (i + 1) % n
+        xi, yi = poly[i]; xj, yj = poly[j]
+        intersect = ((yi > y) != (yj > y)) and (x < (xj - xi) * (y - yi) / ((yj - yi) if (yj - yi) != 0 else 1e-9) + xi)
+        if intersect: inside = not inside
+    return inside
+
+def point_in_ring(x, y, outer, inner):
+    return point_in_poly(x, y, outer) and (not point_in_poly(x, y, inner))
+
+def poly_centroid(poly):
+    n = len(poly);  sx = sum(p[0] for p in poly)/max(n,1); sy = sum(p[1] for p in poly)/max(n,1)
+    return sx, sy
 
 
 #---------------------------------------------------------------
