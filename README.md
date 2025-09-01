@@ -1,4 +1,4 @@
-## Open Kart – Game Features
+### Open Kart – Game Features
 # 1. Main Menu & Navigation
 The game begins with a main menu offering options: Play, Explore, Compete, and Exit. Players use the UP/DOWN arrow keys to navigate and Enter/Space to select. The HUD consistently displays Lives and Score, with Collisions shown during races.
 # 2. Camera Control
@@ -45,6 +45,7 @@ The HUD adapts per mode:
 *	Explore HUD: Coins collected, Time countdown, Skill duration.
 *	Compete HUD: Player labels, Lap counters.
 ## The feedback system ensures players always have critical information.
+
 
 
 
