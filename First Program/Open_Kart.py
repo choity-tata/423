@@ -1627,6 +1627,73 @@ def update_player(dt, pos, dir_deg, speed, keys, is_p2=False):
                 p1_hit_cd = 0.5
 
     return dir_deg, speed
+
+def check_pvp_collision():
+    """If P1 and P2 collide, stun the one that's behind by centerline progress."""
+    global p1_stun, p2_stun, p1_collision_count, p2_collision_count, p1_hit_cd, p2_hit_cd
+    outer, inner = get_track_polylines_for_map(current_map)
+    dx = p1_pos[0] - p2_pos[0]; dy = p1_pos[1] - p2_pos[1]
+    sum_r = kart_collision_radius * 2
+    if dx*dx + dy*dy <= sum_r*sum_r:
+        
+        d = math.hypot(dx, dy) or 1.0
+        nx, ny = dx/d, dy/d
+        push = (sum_r - d) * 0.5
+        p1_pos[0] += nx * push; p1_pos[1] += ny * push
+        p2_pos[0] -= nx * push; p2_pos[1] -= ny * push
+
+        
+        nsegs = len(outer)
+        s1, t1, _ = closest_center_param(outer, inner, p1_pos[0], p1_pos[1])
+        s2, t2, _ = closest_center_param(outer, inner, p2_pos[0], p2_pos[1])
+        prog1 = normalized_progress(s1, t1, comp_start_seg, nsegs, start_t=comp_start_t)
+        prog2 = normalized_progress(s2, t2, comp_start_seg, nsegs, start_t=comp_start_t)
+        if prog1 < prog2 - 0.01:      
+            
+            p1_stun = stun_duration_on_bump
+            if p1_hit_cd <= 0.0:
+                p1_collision_count += 1
+                p1_hit_cd = 0.5
+            
+            back = 180.0
+            
+            c_seg, c_t, (ccx, ccy) = closest_center_param(outer, inner, p1_pos[0], p1_pos[1])
+            j = (c_seg + 1) % len(outer)
+            ddx = outer[j][0] - outer[c_seg][0]; ddy = outer[j][1] - outer[c_seg][1]
+            LL = math.hypot(ddx, ddy) or 1.0
+            nnx, nny = (-ddy/LL, ddx/LL)
+            lane = (p1_pos[0] - ccx)*nnx + (p1_pos[1] - ccy)*nny
+            nseg, nt = _step_back_center_param(outer, c_seg, c_t, back)
+            (cx, cy), ang = get_center_and_tangent(outer, inner, nseg, nt)
+            p1_pos[0], p1_pos[1] = cx + nnx*lane, cy + nny*lane
+            globals()['p1_dir'] = ang
+            globals()['p1_speed'] = 0.0
+        elif prog2 < prog1 - 0.01:
+            
+            p2_stun = stun_duration_on_bump
+            if p2_hit_cd <= 0.0:
+                p2_collision_count += 1
+                p2_hit_cd = 0.5
+            back = 180.0
+            c_seg, c_t, (ccx, ccy) = closest_center_param(outer, inner, p2_pos[0], p2_pos[1])
+            j = (c_seg + 1) % len(outer)
+            ddx = outer[j][0] - outer[c_seg][0]; ddy = outer[j][1] - outer[c_seg][1]
+            LL = math.hypot(ddx, ddy) or 1.0
+            nnx, nny = (-ddy/LL, ddx/LL)
+            lane = (p2_pos[0] - ccx)*nnx + (p2_pos[1] - ccy)*nny
+            nseg, nt = _step_back_center_param(outer, c_seg, c_t, back)
+            (cx, cy), ang = get_center_and_tangent(outer, inner, nseg, nt)
+            p2_pos[0], p2_pos[1] = cx + nnx*lane, cy + nny*lane
+            globals()['p2_dir'] = ang
+            globals()['p2_speed'] = 0.0
+        else:
+            
+            p1_stun = max(p1_stun, 0.3); p2_stun = max(p2_stun, 0.3)
+            if p1_hit_cd <= 0.0:
+                p1_collision_count += 1; p1_hit_cd = 0.5
+            if p2_hit_cd <= 0.0:
+                p2_collision_count += 1; p2_hit_cd = 0.5
+
 #---------------------------------------------------------------
 def main():
     glutInit()
