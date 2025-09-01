@@ -216,6 +216,54 @@ def draw_rock(x, y, s=1.0):
     glTranslatef(-12, -8, 4); gluSphere(q_sph, 7, 12, 10)
     glPopMatrix()
 
+def _lerp2(a, b, t): return (a[0]*(1-t)+b[0]*t, a[1]*(1-t)+b[1]*t)
+def _seg_normal(p0, p1):
+    dx, dy = (p1[0]-p0[0], p1[1]-p0[1]); L = math.hypot(dx, dy) or 1.0
+    return (-dy/L, dx/L)
+
+def _find_off_road(px, py, nx, ny, outer, inner, prefer, base_offset, step=25.0, max_iter=8):
+    best = None
+    for sign in (+1, -1):
+        off = base_offset
+        for _ in range(max_iter):
+            cx = px + sign*nx*off; cy = py + sign*ny*off
+            if not point_in_ring(cx, cy, outer, inner):
+                if prefer == 'outside' and not point_in_poly(cx, cy, outer): return (cx, cy)
+                if prefer == 'inside'  and point_in_poly(cx, cy, inner):    return (cx, cy)
+                if best is None: best = (cx, cy)
+            off += step
+    return best if best is not None else (px, py)
+
+def _points_outside_outer(outer, inner, base_offset, points_per_segment):
+    pts = []; n = len(outer); ts = [(k+1)/(points_per_segment+1) for k in range(points_per_segment)]
+    for i in range(n):
+        j = (i + 1) % n; p0, p1 = outer[i], outer[j]; nx, ny = _seg_normal(p0, p1)
+        for t in ts:
+            px, py = _lerp2(p0, p1, t); pts.append(_find_off_road(px, py, nx, ny, outer, inner, 'outside', base_offset))
+    return pts
+
+def _points_inside_inner(outer, inner, base_offset, points_per_segment):
+    pts = []; n = len(inner); ts = [(k+1)/(points_per_segment+1) for k in range(points_per_segment)]
+    for i in range(n):
+        j = (i + 1) % n; p0, p1 = inner[i], inner[j]; nx, ny = _seg_normal(p0, p1)
+        for t in ts:
+            px, py = _lerp2(p0, p1, t); pts.append(_find_off_road(px, py, nx, ny, outer, inner, 'inside', base_offset))
+    return pts
+
+def build_decor_for_map(m):
+    outer, inner = get_track_polylines_for_map(m)
+    if m == 1:
+        a = _points_outside_outer(outer, inner, base_offset=70.0, points_per_segment=1)
+        b = _points_inside_inner(outer, inner, base_offset=70.0, points_per_segment=1)
+        decor_cache[m] = {"trees": a + b}
+    elif m == 2:
+        a = _points_outside_outer(outer, inner, base_offset=60.0, points_per_segment=10)
+        b = _points_inside_inner(outer, inner, base_offset=60.0, points_per_segment=10)
+        decor_cache[m] = {"ice": a + b}
+    else:
+        a = _points_outside_outer(outer, inner, base_offset=65.0, points_per_segment=10)
+        b = _points_inside_inner(outer, inner, base_offset=65.0, points_per_segment=10)
+        decor_cache[m] = {"rocks": a + b}
 
 #---------------------------------------------------------------
 def main():
