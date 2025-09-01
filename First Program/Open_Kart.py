@@ -590,6 +590,24 @@ def _step_back_center_param(outer, seg, t, back_len):
             cur_seg = (cur_seg - 1) % n
             cur_t = 1.0
     return cur_seg, cur_t
+
+def _step_forward_center_param(outer, seg, t, fwd_len):
+    """Move forward along the centerline by fwd_len units; return (seg,t)."""
+    n = len(outer)
+    cur_seg = seg % n
+    cur_t = max(0.0, min(1.0, t))
+    remain = max(0.0, fwd_len)
+    while remain > 1e-6:
+        seg_len = _segment_length(outer, cur_seg)
+        rest_on_seg = (1.0 - cur_t) * max(seg_len, 1e-6)
+        if remain <= rest_on_seg:
+            new_t = cur_t + remain / max(seg_len, 1e-6)
+            return cur_seg, max(0.0, min(1.0, new_t))
+        else:
+            remain -= rest_on_seg
+            cur_seg = (cur_seg + 1) % n
+            cur_t = 0.0
+    return cur_seg, cur_t
 #---------------------------------------------------------------
 def main():
     glutInit()
