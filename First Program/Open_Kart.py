@@ -1502,6 +1502,131 @@ def draw_explore_scene():
         draw_text(sxR, syR - 2,  f"Refill Duration: {refill_secs}")
     except Exception:
         pass
+
+def spawn_compete():
+    global current_map, compete_started, comp_start_seg, compete_over, compete_winner
+    global p1_pos, p1_dir, p1_speed, p1_stun
+    global p2_pos, p2_dir, p2_speed, p2_stun
+    global p1_rifle_ammo, p1_missile_ammo, p2_rifle_ammo, p2_missile_ammo
+    global p1_rifle_regen, p1_missile_regen, p2_rifle_regen, p2_missile_regen
+    global p1_lap, p2_lap, prev_prog_p1, prev_prog_p2, p1_lives, p2_lives
+    global p1_collision_count, p2_collision_count, p1_hit_cd, p2_hit_cd
+    global ignore_first_wrap_p1, ignore_first_wrap_p2
+    
+    if decor_cache[current_map] is None:
+        build_decor_for_map(current_map)
+    outer, inner = get_track_polylines_for_map(current_map)
+    fi, ft = get_finish_marker(current_map)
+    # Spawn slightly AFTER the finish gate so finish is behind karts.
+    start_fwd = 120.0
+    s_seg, s_t = _step_forward_center_param(outer, fi, ft, start_fwd)
+    # Anchor normalized progress at the actual finish marker so wraps
+    # occur only after a full lap crossing the finish line.
+    comp_start_seg = fi
+    globals()['comp_start_t'] = ft
+    (sx, sy), sdir = get_center_and_tangent(outer, inner, s_seg, s_t)
+
+    
+    j = (s_seg + 1) % len(outer)
+    tx = outer[j][0] - outer[s_seg][0]; ty = outer[j][1] - outer[s_seg][1]
+    L = math.hypot(tx, ty) or 1.0
+    nx, ny = (-ty / L, tx / L)
+
+    
+    side = 26.0
+    p1_pos[:] = [sx + nx*side, sy + ny*side, 0.0]   
+    p2_pos[:] = [sx - nx*side, sy - ny*side, 0.0]   
+    p1_dir = sdir; p2_dir = sdir
+    p1_speed = 0.0; p2_speed = 0.0
+    p1_stun = 0.0; p2_stun = 0.0
+    compete_started = True
+    compete_over = False; compete_winner = ""
+    
+    p1_rifle_ammo = 10; p1_missile_ammo = 3; p1_rifle_regen = 0.0; p1_missile_regen = 0.0
+    p2_rifle_ammo = 10; p2_missile_ammo = 3; p2_rifle_regen = 0.0; p2_missile_regen = 0.0
+    
+    p1_lives = 5; p2_lives = 5
+    p1_collision_count = 0; p2_collision_count = 0
+    p1_hit_cd = 0.0; p2_hit_cd = 0.0
+    
+    p1_lap = 0; p2_lap = 0
+    
+    # Initialize previous progress to the current projected progress on centerline
+    # for both players to avoid any initial wrap jitter.
+    nsegs = len(outer)
+    s1, t1, _ = closest_center_param(outer, inner, p1_pos[0], p1_pos[1])
+    s2, t2, _ = closest_center_param(outer, inner, p2_pos[0], p2_pos[1])
+    prev_prog_p1 = normalized_progress(s1, t1, comp_start_seg, nsegs, start_t=comp_start_t)
+    prev_prog_p2 = normalized_progress(s2, t2, comp_start_seg, nsegs, start_t=comp_start_t)
+    # Initialize finish gate signed distances for both players
+    fi, ft = get_finish_marker(current_map)
+    (fx, fy), fang = get_center_and_tangent(outer, inner, fi, ft)
+    urad = math.radians(fang)
+    ux, uy = math.cos(urad), math.sin(urad)
+    r1x, r1y = p1_pos[0] - fx, p1_pos[1] - fy
+    r2x, r2y = p2_pos[0] - fx, p2_pos[1] - fy
+    globals()['finish_dot_p1_prev'] = r1x*ux + r1y*uy
+    globals()['finish_dot_p2_prev'] = r2x*ux + r2y*uy
+    
+    globals()['p1_boost_active'] = 0.0; globals()['p1_boost_cooldown'] = 0.0; globals()['p1_boost_charges'] = 2
+    globals()['p2_boost_active'] = 0.0; globals()['p2_boost_cooldown'] = 0.0; globals()['p2_boost_charges'] = 2
+    ignore_first_wrap_p1 = False
+    ignore_first_wrap_p2 = False
+
+def update_player(dt, pos, dir_deg, speed, keys, is_p2=False):
+    """Generic kart updater used by Compete. keys: dict with booleans {left,right,accel,brake}"""
+    
+    
+    a = 0.0
+    if keys.get('accel'): a += 480.0
+    if keys.get('brake'): a -= 320.0
+    speed += a * dt
+    speed = min(speed, 780.0)
+    speed = max(speed, -312.0)
+
+    
+    if speed > 0:
+        speed -= 120.0 * dt
+        if speed < 0: speed = 0.0
+    elif speed < 0:
+        speed += 120.0 * dt
+        if speed > 0: speed = 0.0
+
+    
+    turn_mag = 3.0 * (speed/780.0) * 60.0 * dt
+    if keys.get('left'):  dir_deg += turn_mag
+    if keys.get('right'): dir_deg -= turn_mag
+
+    
+    boost_mult = 1.0
+    if speed > 0:
+        if is_p2:
+            if globals().get('p2_boost_active', 0.0) > 0.0:
+                boost_mult = globals().get('explore_boost_mult', 2.8)
+        else:
+            if globals().get('p1_boost_active', 0.0) > 0.0:
+                boost_mult = globals().get('explore_boost_mult', 2.8)
+    dx = math.cos(math.radians(dir_deg)) * speed * dt * boost_mult
+    dy = math.sin(math.radians(dir_deg)) * speed * dt * boost_mult
+    oldx, oldy = pos[0], pos[1]
+    pos[0] += dx; pos[1] += dy
+
+    outer, inner = get_track_polylines_for_map(current_map)
+    if not point_in_ring(pos[0], pos[1], outer, inner):
+        pos[0], pos[1] = oldx, oldy
+        speed *= 0.2
+        
+        global p1_hit_cd, p2_hit_cd, p1_collision_count, p2_collision_count
+        if is_p2:
+            if p2_hit_cd <= 0.0:
+                p2_collision_count += 1
+                p2_hit_cd = 0.5
+        else:
+            if p1_hit_cd <= 0.0:
+                p1_collision_count += 1
+                p1_hit_cd = 0.5
+
+    return dir_deg, speed
 #---------------------------------------------------------------
 def main():
     glutInit()
