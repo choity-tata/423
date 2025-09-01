@@ -1364,6 +1364,15 @@ def update_coins(dt):
             c["timer"] -= dt
             if c["timer"] <= 0.0:
                 c["active"] = True
+
+def draw_coin_at(x, y):
+    h = 6.0 + 2.0 * math.sin(coin_bob_t * 2.0)
+    glPushMatrix()
+    glTranslatef(x, y, h)
+    glRotatef(coin_spin, 0, 0, 1)
+    glColor3f(0.95, 0.80, 0.22)  
+    gluCylinder(q_cyl, 10.0, 10.0, 2.0, 24, 1)
+    glPopMatrix()
 #---------------------------------------------------------------
 def main():
     glutInit()
