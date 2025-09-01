@@ -1378,6 +1378,83 @@ def draw_coins():
     for c in coins:
         if c["active"]:
             draw_coin_at(c["x"], c["y"])
+
+
+def update_explore(dt):
+    global explore_dir, walk_phase, walk_blend
+    if explore_game_over:
+        return
+    
+    turn = 0.0
+    if b'a' in keys_down: turn += 1.0
+    if b'd' in keys_down: turn -= 1.0
+    explore_dir = (explore_dir + turn * 140.0 * dt) % 360.0
+    
+    move = 0.0
+    if b'w' in keys_down: move += 1.0
+    if b's' in keys_down: move -= 1.0
+    rad = math.radians(explore_dir); fx, fy = math.cos(rad), math.sin(rad)
+    
+    global explore_boost_active, explore_boost_cooldown, explore_boost_charges
+    if explore_boost_active > 0.0:
+        explore_boost_active = max(0.0, explore_boost_active - dt)
+    if explore_boost_charges < 2:
+        explore_boost_cooldown = max(0.0, explore_boost_cooldown - dt)
+        if explore_boost_cooldown == 0.0:
+            explore_boost_charges += 1
+            if explore_boost_charges < 2:
+                explore_boost_cooldown = 7.0
+
+    
+    step = explore_speed * dt * move
+    if explore_boost_active > 0.0 and move > 0:
+        step *= explore_boost_mult
+    nx = explore_pos[0] + fx * step; ny = explore_pos[1] + fy * step
+    outer, inner = get_track_polylines_for_map(current_map)
+    if point_in_poly(nx, ny, inner):
+        explore_pos[0], explore_pos[1] = nx, ny
+    else:
+        if point_in_poly(nx, explore_pos[1], inner): explore_pos[0] = nx
+        elif point_in_poly(explore_pos[0], ny, inner): explore_pos[1] = ny
+    target_blend = 1.0 if move != 0.0 else 0.0
+    walk_blend += (target_blend - walk_blend) * min(1.0, 10.0 * dt)
+    if move != 0.0:
+        walk_phase += abs(220.0 * 0.09) * dt
+
+def build_explore_ai(m, count=9):
+    global explore_ai
+    explore_ai = []
+    outer, inner = get_track_polylines_for_map(m)
+    n = len(outer)
+    for k in range(count):
+        seg = random.randrange(0, n)
+        t = random.uniform(0.0, 1.0)
+        (cx, cy), ang = get_center_and_tangent(outer, inner, seg, t)
+        j = (seg + 1) % n
+        dx = outer[j][0] - outer[seg][0]; dy = outer[j][1] - outer[seg][1]
+        L  = math.hypot(dx, dy) or 1.0
+        nx, ny = (-dy / L, dx / L)
+        lane = random.uniform(-22.0, 22.0)
+        spd = random.uniform(260.0, 520.0)
+        explore_ai.append({"pos":[cx+nx*lane, cy+ny*lane, 0.0], "dir": ang, "seg": seg, "t": t, "lane": lane, "speed": spd})
+
+def update_explore_ai(dt):
+    if not explore_ai: return
+    outer, inner = get_track_polylines_for_map(current_map)
+    for A in explore_ai:
+        seg_len = _segment_length(outer, A['seg'])
+        dt_frac = (A['speed'] * dt) / max(seg_len, 1e-6)
+        A['t'] += dt_frac
+        while A['t'] >= 1.0:
+            A['t'] -= 1.0
+            A['seg'] = (A['seg'] + 1) % len(outer)
+        (cx, cy), ang = get_center_and_tangent(outer, inner, A['seg'], A['t'])
+        j = (A['seg'] + 1) % len(outer)
+        dx = outer[j][0] - outer[A['seg']][0]; dy = outer[j][1] - outer[A['seg']][1]
+        L  = math.hypot(dx, dy) or 1.0
+        nx, ny = (-dy / L, dx / L)
+        A['pos'][0], A['pos'][1], A['pos'][2] = cx + nx * A['lane'], cy + ny * A['lane'], 0.0
+        A['dir'] = ang
 #---------------------------------------------------------------
 def main():
     glutInit()
