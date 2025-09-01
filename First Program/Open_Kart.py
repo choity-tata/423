@@ -1252,6 +1252,77 @@ def enforce_collision_and_lives():
     if lives <= 0:
         game_over = True
 
+def check_obstacle_collisions_compete():
+    """Per-player obstacle collisions for compete mode."""
+    global p1_speed, p2_speed, p1_stun, p2_stun, p1_collision_count, p2_collision_count, p1_hit_cd, p2_hit_cd
+    for ob in obstacles:
+        if not ob.get('active', True):
+            continue
+        
+        dx = p1_pos[0] - ob['x']; dy = p1_pos[1] - ob['y']
+        rr = (ob['r'] + kart_collision_radius)
+        d2 = dx*dx + dy*dy
+        if d2 <= rr*rr:
+            d = math.hypot(dx, dy) or 1.0
+            nx, ny = dx/d, dy/d
+            push = (rr + 2.0) - d
+            if push > 0:
+                p1_pos[0] += nx * push; p1_pos[1] += ny * push
+            p1_speed = 0.0
+            p1_stun = max(p1_stun, 0.3)
+            if p1_hit_cd <= 0.0:
+                p1_collision_count += 1; p1_hit_cd = 0.5
+        
+        dx2 = p2_pos[0] - ob['x']; dy2 = p2_pos[1] - ob['y']
+        d22 = dx2*dx2 + dy2*dy2
+        if d22 <= rr*rr:
+            d = math.hypot(dx2, dy2) or 1.0
+            nx, ny = dx2/d, dy2/d
+            push = (rr + 2.0) - d
+            if push > 0:
+                p2_pos[0] += nx * push; p2_pos[1] += ny * push
+            p2_speed = 0.0
+            p2_stun = max(p2_stun, 0.3)
+            if p2_hit_cd <= 0.0:
+                p2_collision_count += 1; p2_hit_cd = 0.5
+
+def enforce_compete_lives():
+    """Apply life loss on too many collisions and reset players to track.""" 
+    global p1_collision_count, p2_collision_count, p1_lives, p2_lives
+    if p1_collision_count >= max_collisions_before_life_loss:
+        p1_lives = max(0, p1_lives - 1)
+        p1_collision_count = 0
+        reset_p1_to_track()
+    if p2_collision_count >= max_collisions_before_life_loss:
+        p2_lives = max(0, p2_lives - 1)
+        p2_collision_count = 0
+        reset_p2_to_track()
+
+def reset_p1_to_track():
+    outer, inner = get_track_polylines_for_map(current_map)
+    seg, t, (cx, cy) = closest_center_param(outer, inner, p1_pos[0], p1_pos[1])
+    (tx, ty), ang = get_center_and_tangent(outer, inner, seg, t)
+    j = (seg + 1) % len(outer)
+    dx = outer[j][0] - outer[seg][0]; dy = outer[j][1] - outer[seg][1]
+    L  = math.hypot(dx, dy) or 1.0
+    nx, ny = (-dy / L, dx / L)
+    lane = 26.0
+    p1_pos[0], p1_pos[1], p1_pos[2] = cx + nx*lane, cy + ny*lane, 0.0
+    global p1_dir, p1_speed, p1_stun
+    p1_dir = ang; p1_speed = 0.0; p1_stun = 0.0
+
+def reset_p2_to_track():
+    outer, inner = get_track_polylines_for_map(current_map)
+    seg, t, (cx, cy) = closest_center_param(outer, inner, p2_pos[0], p2_pos[1])
+    (tx, ty), ang = get_center_and_tangent(outer, inner, seg, t)
+    j = (seg + 1) % len(outer)
+    dx = outer[j][0] - outer[seg][0]; dy = outer[j][1] - outer[seg][1]
+    L  = math.hypot(dx, dy) or 1.0
+    nx, ny = (-dy / L, dx / L)
+    lane = 26.0
+    p2_pos[0], p2_pos[1], p2_pos[2] = cx - nx*lane, cy - ny*lane, 0.0
+    global p2_dir, p2_speed, p2_stun
+    p2_dir = ang; p2_speed = 0.0; p2_stun = 0.0
 #---------------------------------------------------------------
 def main():
     glutInit()
