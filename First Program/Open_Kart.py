@@ -1119,6 +1119,11 @@ def build_obstacles_for_map(m, count=12):
                     best = (ox, oy)
                 obstacles.append({"x": best[0], "y": best[1], "r": 16.0, "active": True, "respawn": 0.0})
                 break
+
+def draw_obstacles():
+    for ob in obstacles:
+        if ob.get('active', True):
+            draw_rock(ob['x'], ob['y'], s=0.9)
 #---------------------------------------------------------------
 def main():
     glutInit()
