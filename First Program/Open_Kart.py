@@ -56,3 +56,37 @@ def set_clear_color_for_map():
     else:
         glClearColor(0.10, 0.12, 0.15, 1.0)
 
+
+
+
+
+
+
+
+#---------------------------------------------------------------
+def main():
+    glutInit()
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH)
+    glutInitWindowSize(SCREEN_W, SCREEN_H)
+    glutInitWindowPosition(0, 0)
+    glutCreateWindow(b"Open Kart Racers")
+
+    global q_sph, q_cyl
+    q_sph = gluNewQuadric()
+    q_cyl = gluNewQuadric()
+
+    glEnable(GL_DEPTH_TEST)
+    glClearColor(0.05, 0.07, 0.10, 1.0)
+
+    glutDisplayFunc(showScreen)
+    glutKeyboardFunc(keyboardListener)
+    glutKeyboardUpFunc(keyboardUpListener)
+    glutSpecialFunc(specialKeyListener)
+    glutSpecialUpFunc(specialUpListener)
+    glutMouseFunc(mouseListener)
+    glutIdleFunc(idle)
+
+    glutMainLoop()
+
+if __name__ == "__main__":
+    main()
