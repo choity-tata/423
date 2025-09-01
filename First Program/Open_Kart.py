@@ -2322,6 +2322,43 @@ def spawn_bullet(owner='player'):
     spd = 1400.0
     bullets.append({"x": sx, "y": sy, "vx": vx/L*spd, "vy": vy/L*spd, "life": 2.0})
     return True
+
+def spawn_missile(owner='player'):
+    
+    if owner == 'player':
+        sx, sy = _kart_side_offset(kart_pos, kart_dir, side=-1.0, dist=18.0)
+        dir_deg = kart_dir
+        missiles.append({"owner":"player","x":sx,"y":sy,"dir":dir_deg,"speed":1000.0,
+                         "target":"ai","life":4.0})
+        return True
+    elif owner == 'ai':
+        
+        if ais:
+            best = 1e18; src = None
+            for A in ais:
+                d2 = (A['pos'][0]-kart_pos[0])**2 + (A['pos'][1]-kart_pos[1])**2
+                if d2 < best:
+                    best = d2; src = A
+            if src is not None:
+                sx, sy = _kart_side_offset(src['pos'], src['dir'], side=-1.0, dist=18.0)
+                dir_deg = src['dir']
+                missiles.append({"owner":"ai","x":sx,"y":sy,"dir":dir_deg,"speed":900.0,
+                                 "target":"player","life":4.0})
+                return True
+        return False
+    elif owner == 'p1':
+        sx, sy = _kart_side_offset(p1_pos, p1_dir, side=-1.0, dist=18.0)
+        dir_deg = p1_dir
+        missiles.append({"owner":"p1","x":sx,"y":sy,"dir":dir_deg,"speed":1000.0,
+                         "target":"p2","life":4.0})
+        return True
+    elif owner == 'p2':
+        sx, sy = _kart_side_offset(p2_pos, p2_dir, side=-1.0, dist=18.0)
+        dir_deg = p2_dir
+        missiles.append({"owner":"p2","x":sx,"y":sy,"dir":dir_deg,"speed":1000.0,
+                         "target":"p1","life":4.0})
+        return True
+    return False
 #---------------------------------------------------------------
 def main():
     glutInit()
