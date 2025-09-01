@@ -923,6 +923,38 @@ def update_kart(dt):
     oldx, oldy = kart_pos[0], kart_pos[1]
     kart_pos[0] += dx; kart_pos[1] += dy
 
+    outer, inner = get_track_polylines_for_map(current_map)
+    if not point_in_ring(kart_pos[0], kart_pos[1], outer, inner):
+        if autopilot_timer > 0.0:
+            
+            segc, tc, (ccx, ccy) = closest_center_param(outer, inner, kart_pos[0], kart_pos[1])
+            j = (segc + 1) % len(outer)
+            tx = outer[j][0] - outer[segc][0]; ty = outer[j][1] - outer[segc][1]
+            L = math.hypot(tx, ty) or 1.0
+            nx, ny = (-ty/L, tx/L)
+            
+            lane = (kart_pos[0]-ccx)*nx + (kart_pos[1]-ccy)*ny
+            lane = max(-16.0, min(16.0, lane))
+            kart_pos[0], kart_pos[1] = ccx + nx*lane, ccy + ny*lane
+            kart_speed *= 0.35
+            
+            (_, _ang) = get_center_and_tangent(outer, inner, segc, tc)
+            kart_dir = _ang
+        else:
+            kart_pos[0], kart_pos[1] = oldx, oldy
+            kart_speed *= 0.2
+            if boundary_hit_cooldown <= 0.0:
+                collision_count += 1
+                boundary_hit_cooldown = 0.5
+                
+                stun_timer = max(stun_timer, 0.3)
+    
+    if boost_timer > 0.0: boost_timer = max(0.0, boost_timer - dt)
+    if autopilot_timer > 0.0: autopilot_timer = max(0.0, autopilot_timer - dt)
+    if 'orb_boost_timer_play' in globals() and orb_boost_timer_play > 0.0:
+        globals()['orb_boost_timer_play'] = max(0.0, orb_boost_timer_play - dt)
+    if lap_guard_player > 0.0:
+        lap_guard_player = max(0.0, lap_guard_player - dt)
 
 
 #---------------------------------------------------------------
