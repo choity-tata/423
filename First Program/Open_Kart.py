@@ -2359,6 +2359,106 @@ def spawn_missile(owner='player'):
                          "target":"p1","life":4.0})
         return True
     return False
+
+def update_projectiles(dt):
+    global collision_count, boundary_hit_cooldown, stun_timer, kart_speed
+    global p1_stun, p2_stun, p1_speed, p2_speed, p1_collision_count, p2_collision_count, p1_hit_cd, p2_hit_cd
+    
+    i = 0
+    while i < len(bullets):
+        b = bullets[i]
+        b["x"] += b["vx"] * dt
+        b["y"] += b["vy"] * dt
+        b["life"] -= dt
+        hit = False
+        if b["life"] <= 0.0:
+            hit = True
+        else:
+            for ob in obstacles:
+                if not ob.get('active', True): continue
+                dx = b["x"] - ob['x']; dy = b["y"] - ob['y']
+                if dx*dx + dy*dy <= (ob['r']*ob['r']):
+                    
+                    ob['active'] = False
+                    ob['respawn'] = random.uniform(5.0, 10.0)
+                    hit = True
+                    break
+        if hit:
+            bullets.pop(i)
+        else:
+            i += 1
+
+    
+    i = 0
+    while i < len(missiles):
+        m = missiles[i]
+        m["life"] -= dt
+        if m["life"] <= 0.0:
+            missiles.pop(i); continue
+        
+        if m["target"] == 'ai':
+            
+            if ais:
+                best = 1e18; tx = ty = 0.0
+                for A in ais:
+                    d2 = (A['pos'][0]-m['x'])**2 + (A['pos'][1]-m['y'])**2
+                    if d2 < best:
+                        best = d2; tx, ty = A['pos'][0], A['pos'][1]
+            else:
+                tx, ty = 0.0, 0.0
+            
+        elif m["target"] == 'player':
+            tx, ty = kart_pos[0], kart_pos[1]
+        elif m["target"] == 'p2':
+            tx, ty = p2_pos[0], p2_pos[1]
+        elif m["target"] == 'p1':
+            tx, ty = p1_pos[0], p1_pos[1]
+        else:
+            tx, ty = 0.0, 0.0
+        desired = math.degrees(math.atan2(ty - m["y"], tx - m["x"]))
+        diff = (desired - m["dir"] + 540.0) % 360.0 - 180.0
+        turn_rate = 240.0 * dt  
+        if diff > 0: m["dir"] += min(diff, turn_rate)
+        else:        m["dir"] += max(diff, -turn_rate)
+        
+        rad = math.radians(m["dir"])
+        m["x"] += math.cos(rad) * m["speed"] * dt
+        m["y"] += math.sin(rad) * m["speed"] * dt
+        
+        if m["target"] == 'ai':
+            hit_any = False
+            for A in ais:
+                dx = m["x"] - A['pos'][0]; dy = m["y"] - A['pos'][1]
+                if dx*dx + dy*dy <= (kart_collision_radius*kart_collision_radius):
+                    A['pause_timer'] = max(A.get('pause_timer',0.0), 0.6)
+                    hit_any = True
+                    break
+            if hit_any:
+                missiles.pop(i); continue
+        elif m["target"] == 'player':
+            dx = m["x"] - kart_pos[0]; dy = m["y"] - kart_pos[1]
+            if dx*dx + dy*dy <= (kart_collision_radius*kart_collision_radius):
+                
+                stun_timer = max(stun_timer, stun_duration_on_bump)
+                kart_speed = 0.0
+                missiles.pop(i); continue
+        elif m["target"] == 'p2':
+            dx = m["x"] - p2_pos[0]; dy = m["y"] - p2_pos[1]
+            if dx*dx + dy*dy <= (kart_collision_radius*kart_collision_radius):
+                p2_stun = max(p2_stun, stun_duration_on_bump)
+                p2_speed = 0.0
+                if p2_hit_cd <= 0.0:
+                    p2_collision_count += 1; p2_hit_cd = 0.5
+                missiles.pop(i); continue
+        elif m["target"] == 'p1':
+            dx = m["x"] - p1_pos[0]; dy = m["y"] - p1_pos[1]
+            if dx*dx + dy*dy <= (kart_collision_radius*kart_collision_radius):
+                p1_stun = max(p1_stun, stun_duration_on_bump)
+                p1_speed = 0.0
+                if p1_hit_cd <= 0.0:
+                    p1_collision_count += 1; p1_hit_cd = 0.5
+                missiles.pop(i); continue
+        i += 1
 #---------------------------------------------------------------
 def main():
     glutInit()
