@@ -2282,6 +2282,46 @@ def _kart_side_offset(pos, dir_deg, side=1.0, dist=16.0):
     rad = math.radians(dir_deg)
     nx, ny = -math.sin(rad), math.cos(rad)  
     return pos[0] + nx * side * dist, pos[1] + ny * side * dist
+
+def spawn_bullet(owner='player'):
+    
+    if owner == 'player':
+        sx, sy = _kart_side_offset(kart_pos, kart_dir, side=+1.0, dist=18.0)
+    elif owner == 'p1':
+        sx, sy = _kart_side_offset(p1_pos, p1_dir, side=+1.0, dist=18.0)
+    elif owner == 'p2':
+        sx, sy = _kart_side_offset(p2_pos, p2_dir, side=+1.0, dist=18.0)
+    elif owner == 'ai':
+        
+        if ais:
+            best = 1e18; src = None
+            for A in ais:
+                d2 = (A['pos'][0]-kart_pos[0])**2 + (A['pos'][1]-kart_pos[1])**2
+                if d2 < best:
+                    best = d2; src = A
+            if src is None:
+                return False
+            sx, sy = _kart_side_offset(src['pos'], src['dir'], side=+1.0, dist=18.0)
+        else:
+            return False
+    else:
+        return False
+    tx, ty = None, None
+    best = 1e9; target = None
+    for ob in obstacles:
+        if not ob.get('active', True): continue
+        dx = ob['x'] - sx; dy = ob['y'] - sy
+        d2 = dx*dx + dy*dy
+        if d2 < best:
+            best = d2; target = ob
+    if target is None:
+        return False
+    tx, ty = target['x'], target['y']
+    vx, vy = tx - sx, ty - sy
+    L = math.hypot(vx, vy) or 1.0
+    spd = 1400.0
+    bullets.append({"x": sx, "y": sy, "vx": vx/L*spd, "vy": vy/L*spd, "life": 2.0})
+    return True
 #---------------------------------------------------------------
 def main():
     glutInit()
