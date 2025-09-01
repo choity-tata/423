@@ -956,6 +956,51 @@ def update_kart(dt):
     if lap_guard_player > 0.0:
         lap_guard_player = max(0.0, lap_guard_player - dt)
 
+def update_ais(dt):
+    if not ai_enabled or not ais:
+        return
+    outer, inner = get_track_polylines_for_map(current_map)
+    for A in ais:
+        
+        if A['pause_timer'] > 0.0:
+            A['pause_timer'] = max(0.0, A['pause_timer'] - dt)
+        if A.get('stop_timer', 0.0) > 0.0:
+            A['stop_timer'] = max(0.0, A['stop_timer'] - dt)
+        if A.get('lap_guard', 0.0) > 0.0:
+            A['lap_guard'] = max(0.0, A['lap_guard'] - dt)
+        seg_len = _segment_length(outer, A['seg'])
+        slow_mult = 0.75 if A.get('slow_timer',0.0) > 0.0 else 1.0
+        if A.get('slow_timer',0.0) > 0.0:
+            A['slow_timer'] = max(0.0, A['slow_timer'] - dt)
+        pause_mult = 0.15 if A['pause_timer'] > 0.0 else 1.0
+        
+        move_mult = 0.0 if A.get('stop_timer', 0.0) > 0.0 else pause_mult
+        dt_frac = (A['speed'] * slow_mult * move_mult * dt) / max(seg_len, 1e-6)
+        A['t'] += dt_frac
+        while A['t'] >= 1.0:
+            A['t'] -= 1.0
+            A['seg'] = (A['seg'] + 1) % len(outer)
+        (cx, cy), ang = get_center_and_tangent(outer, inner, A['seg'], A['t'])
+        j = (A['seg'] + 1) % len(outer)
+        dx = outer[j][0] - outer[A['seg']][0]; dy = outer[j][1] - outer[A['seg']][1]
+        L  = math.hypot(dx, dy) or 1.0
+        nx, ny = (-dy / L, dx / L)
+        
+        look_x, look_y = cx + (outer[j][0]-outer[A['seg']][0])*0.1, cy + (outer[j][1]-outer[A['seg']][1])*0.1
+        best = 1e9; sign = 1.0
+        for ob in obstacles:
+            if not ob.get('active', True): continue
+            odx = ob['x'] - look_x; ody = ob['y'] - look_y
+            d2 = odx*odx + ody*ody
+            if d2 < best:
+                best = d2
+                side = odx*nx + ody*ny
+                sign = -1.0 if side > 0 else 1.0
+        
+        target_lane = A.get('lane', 26.0) * sign
+        A['lane'] += (target_lane - A['lane']) * min(1.0, 2.0 * dt)
+        A['pos'][0], A['pos'][1], A['pos'][2] = cx + nx * A['lane'], cy + ny * A['lane'], 0.0
+        A['dir'] = ang
 
 #---------------------------------------------------------------
 def main():
