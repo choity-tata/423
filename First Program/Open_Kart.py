@@ -1155,6 +1155,15 @@ def update_blue_orbs(dt):
                 lane = random.uniform(-22.0, 22.0)
                 orb['x'], orb['y'] = cx + nx*lane, cy + ny*lane
                 orb['active'] = True
+
+def draw_blue_orbs():
+    for orb in blue_orbs:
+        if orb['active']:
+            glPushMatrix()
+            glTranslatef(orb['x'], orb['y'], 8.0)
+            glColor3f(0.2, 0.5, 1.0)
+            gluSphere(q_sph, 6.0, 12, 10)
+            glPopMatrix()
 #---------------------------------------------------------------
 def main():
     glutInit()
