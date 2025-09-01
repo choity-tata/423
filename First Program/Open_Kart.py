@@ -2492,6 +2492,18 @@ def draw_ammo_counters():
     sx2, sy2 = world_to_screen(right_x, right_y, 10.0)
     draw_text(sx2, sy2, f"{missile_ammo}/3")
 
+def draw_ammo_counters_for(pos_xy, dir_deg, rifle, missile):
+    
+    rad = math.radians(dir_deg)
+    nx, ny = -math.sin(rad), math.cos(rad)
+    left_x = pos_xy[0] + nx * 34.0
+    left_y = pos_xy[1] + ny * 34.0
+    right_x = pos_xy[0] - nx * 34.0
+    right_y = pos_xy[1] - ny * 34.0
+    sx, sy = world_to_screen(left_x, left_y, 10.0)
+    draw_text(sx, sy, f"{rifle}/10")
+    sx2, sy2 = world_to_screen(right_x, right_y, 10.0)
+    draw_text(sx2, sy2, f"{missile}/3")
 #---------------------------------------------------------------
 def main():
     glutInit()
