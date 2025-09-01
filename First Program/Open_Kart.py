@@ -2277,6 +2277,11 @@ def world_to_screen(x, y, z=0.0):
     viewport = glGetIntegerv(GL_VIEWPORT)
     sx, sy, sz = gluProject(x, y, z, model, proj, viewport)
     return sx, sy
+
+def _kart_side_offset(pos, dir_deg, side=1.0, dist=16.0):
+    rad = math.radians(dir_deg)
+    nx, ny = -math.sin(rad), math.cos(rad)  
+    return pos[0] + nx * side * dist, pos[1] + ny * side * dist
 #---------------------------------------------------------------
 def main():
     glutInit()
