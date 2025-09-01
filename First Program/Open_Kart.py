@@ -265,6 +265,115 @@ def build_decor_for_map(m):
         b = _points_inside_inner(outer, inner, base_offset=65.0, points_per_segment=10)
         decor_cache[m] = {"rocks": a + b}
 
+
+def draw_track_map1():
+    road = (0.18, 0.18, 0.18); base = (0.35, 0.48, 0.38)
+    draw_base(base)
+    outer = gen_oval(0, 0, 3000, 1600, 72); inner = offset_inner_from_center(outer, 360)
+    ring_from_polylines(outer, inner, road)
+    fi, ft = get_finish_marker(1)
+    draw_checker_finish_line_from_ring(outer, inner, fi, ft, tiles_along=10, tiles_across=6)
+    if decor_cache[1] is None: build_decor_for_map(1)
+    for (x, y) in decor_cache[1]["trees"]: draw_tree(x, y, s=2.2)
+
+def draw_track_map2():
+    road = (0.20, 0.20, 0.22); base = (0.80, 0.85, 0.95)
+    draw_base(base)
+    outer, inner = get_track_polylines_for_map(2)
+    ring_from_polylines(outer, inner, road)
+    fi, ft = get_finish_marker(2)
+    draw_checker_finish_line_from_ring(outer, inner, fi, ft, tiles_along=10, tiles_across=6)
+    if decor_cache[2] is None: build_decor_for_map(2)
+    for (x, y) in decor_cache[2]["ice"]: draw_ice(x, y, s=2.4)
+
+def draw_track_map3():
+    road = (0.20, 0.20, 0.22); base = (0.15, 0.18, 0.22)
+    draw_base(base)
+    outer = gen_regular_polygon(0, 0, 2300, 4, rot_deg=45.0, sx=1.35, sy=1.0); inner = offset_inner_from_center(outer, 240)
+    ring_from_polylines(outer, inner, road)
+    fi, ft = get_finish_marker(3)
+    draw_checker_finish_line_from_ring(outer, inner, fi, ft, tiles_along=10, tiles_across=6)
+    if decor_cache[3] is None: build_decor_for_map(3)
+    for (x, y) in decor_cache[3]["rocks"]: draw_rock(x, y, s=2.1)
+
+def draw_track():
+    if current_map == 1: draw_track_map1()
+    elif current_map == 2: draw_track_map2()
+    else: draw_track_map3()
+
+
+
+
+def draw_menu():
+    glClearColor(0.07, 0.09, 0.12, 1.0)
+    draw_text(SCREEN_W//2 - 140, SCREEN_H - 70, "Open Kart Racers")
+    y = SCREEN_H - 120
+    for i, label in enumerate(menu_options):
+        prefix = "> " if i == menu_index else "  "
+        draw_text(40, y, f"{prefix}{label}")
+        y -= 60
+
+def draw_hud_play():
+    y = SCREEN_H - 50
+    draw_text(10, y, f"Lives: {lives}"); y -= 30
+    draw_text(10, y, f"Collisions: {collision_count}" if race_started else "Press Space to start"); y -= 30
+    draw_text(10, y, f"Coins: {coins_collected}"); y -= 30
+    draw_text(10, y, "1:Boost(-5c)  2:Autopilot(-10c)  Q:Rifle  E:Missile  R:Reset  M:Menu  F:1st-Person")
+    try:
+        total_racers = max(1, 1 + (len(ais) if ai_enabled else 0))
+        draw_text(SCREEN_W - 160, SCREEN_H - 70, f"Pos: {player_position}/{total_racers}")
+        draw_text(SCREEN_W - 160, SCREEN_H - 40, f"Lap: {player_lap}/2")
+    except Exception:
+        pass
+
+def draw_play_map_select():
+    set_clear_color_for_map()
+    draw_track()
+    target_label = {
+        'play': 'Play', 'explore': 'Explore', 'compete': 'Compete'
+    }.get(map_select_target, 'Play')
+    y = SCREEN_H - 50
+    draw_text(10, y, f"{target_label}: Select Map ({current_map})"); y -= 30
+    draw_text(10, y, "Press 1/2/3 to change map | Enter/Space to start | M to menu")
+    
+    desc = {
+        1: "Map 1: Sunny Oval - wide turns, forgiving.",
+        2: "Map 2: Frozen Square - sharper corners, icy vibe.",
+        3: "Map 3: Night Circuit - tighter inner lane, dark."}
+    y -= 30
+    draw_text(10, y, desc.get(current_map, ""))
+
+
+
+
+def draw_wheel():
+    
+    glPushMatrix()
+    glRotatef(-90, 1, 0, 0)
+    glColor3f(0.08, 0.08, 0.08)
+    radius = 6.0
+    length = 4.0
+    gluCylinder(q_cyl, radius, radius, length, 24, 1)
+    glPopMatrix()
+
+def draw_driver_headarms():
+    glPushMatrix(); glTranslatef(0, 0, 8); glColor3f(0.90, 0.75, 0.55)
+    gluSphere(q_sph, 3.6, 12, 10); glTranslatef(0, 0, 6); gluSphere(q_sph, 3.0, 12, 10)
+    glPopMatrix()
+    glPushMatrix(); glTranslatef(-2.2, 2.6, 6); glRotatef(90, 1, 0, 0); glColor3f(0.90, 0.75, 0.55); gluCylinder(q_cyl, 1.2, 1.2, 6.0, 10, 1); glPopMatrix()
+    glPushMatrix(); glTranslatef( 2.2, 2.6, 6); glRotatef(90, 1, 0, 0); glColor3f(0.90, 0.75, 0.55); gluCylinder(q_cyl, 1.2, 1.2, 6.0, 10, 1); glPopMatrix()
+
+def draw_kart_at(pos_xy, dir_deg, body_color=(0.85, 0.10, 0.10), with_driver=True):
+    glPushMatrix()
+    glTranslatef(pos_xy[0], pos_xy[1], 0)
+    glRotatef(dir_deg, 0, 0, 1)
+    glPushMatrix(); glScalef(0.8, 0.52, 0.34); glColor3f(*body_color); glutSolidCube(40); glPopMatrix()
+    glPushMatrix(); glTranslatef(0, 0, 7); glScalef(0.62, 0.48, 0.16); glColor3f(0.10,0.10,0.12); glutSolidCube(40); glPopMatrix()
+    for dx, dy in [(-14,-12.5),(14,-12.5),(-14,12.5),(14,12.5)]:
+        
+        glPushMatrix(); glTranslatef(dx, dy-2, 6.2); draw_wheel(); glPopMatrix()
+    if with_driver: draw_driver_headarms()
+    glPopMatrix()
 #---------------------------------------------------------------
 def main():
     glutInit()
