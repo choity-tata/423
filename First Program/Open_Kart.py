@@ -103,6 +103,56 @@ def ring_from_polylines(outer_pts, inner_pts, color):
         v3 = (inner_pts[i][0], inner_pts[i][1], 0)
         quad(v0, v1, v2, v3, color)
 
+def draw_checker_finish_line_from_ring(outer_pts, inner_pts, idx, seg_frac,
+                                       tiles_along=10, tiles_across=8):
+    n = len(outer_pts)
+    i0 = idx % n; i1 = (i0 + 1) % n
+    def mix(a, b, t):
+        return (a[0]*(1-t)+b[0]*t, a[1]*(1-t)+b[1]*t)
+    
+    oA = mix(outer_pts[i0], outer_pts[i1], seg_frac)
+    iA = mix(inner_pts[i0], inner_pts[i1], seg_frac)
+    cx, cy = 0.5*(oA[0] + iA[0]), 0.5*(oA[1] + iA[1])
+    
+    tx, ty = outer_pts[i1][0] - outer_pts[i0][0], outer_pts[i1][1] - outer_pts[i0][1]
+    L = math.hypot(tx, ty) or 1.0
+    ux, uy = tx/L, ty/L
+    nx, ny = -uy, ux
+    
+    width_vec_x, width_vec_y = (oA[0] - iA[0], oA[1] - iA[1])
+    track_w = math.hypot(width_vec_x, width_vec_y)
+    total_across = min(track_w, track_w)  
+    tile_size = total_across / max(1, tiles_across)
+    line_length = tile_size * tiles_along
+    
+    start_ax = -0.5 * total_across
+    start_l = -0.5 * line_length
+    
+    glPushAttrib(GL_ENABLE_BIT)
+    glDisable(GL_DEPTH_TEST)
+    z = 0.2
+    for a in range(tiles_along):
+        for c in range(tiles_across):
+            ax0 = start_ax + c * tile_size; ax1 = ax0 + tile_size
+            l0 = start_l + a * tile_size;  l1 = l0 + tile_size
+            
+            v0x = cx + nx*ax0 + ux*l0; v0y = cy + ny*ax0 + uy*l0
+            v1x = cx + nx*ax1 + ux*l0; v1y = cy + ny*ax1 + uy*l0
+            v2x = cx + nx*ax1 + ux*l1; v2y = cy + ny*ax1 + uy*l1
+            v3x = cx + nx*ax0 + ux*l1; v3y = cy + ny*ax0 + uy*l1
+            if (a + c) % 2 == 0:
+                glColor3f(0.05, 0.05, 0.05)
+            else:
+                glColor3f(0.95, 0.95, 0.95)
+            glBegin(GL_QUADS)
+            glVertex3f(v0x, v0y, z)
+            glVertex3f(v1x, v1y, z)
+            glVertex3f(v2x, v2y, z)
+            glVertex3f(v3x, v3y, z)
+            glEnd()
+    glPopAttrib()
+
+
 
 
 #---------------------------------------------------------------
