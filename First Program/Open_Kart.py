@@ -3,8 +3,6 @@ from OpenGL.GLUT import *
 from OpenGL.GLU import *
 import math, random, time
 
-#checking 2
-
 
 camera_view = 'chase'
 fovY = 60
